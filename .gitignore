@@ -1,23 +1,53 @@
-# Byte-compiled / cache
+# -------------------------
+# Python
+# -------------------------
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+*.so
 
-# Virtual environments
+# Byte-compiled
+*.pyc
+
+# Virtual Environments
 .venv/
 venv/
-.env/
+env/
 
-# Environment variables
+# Environment Variables
 .env
 
-# VS Code
-.vscode/
+# Distribution / Packaging
+build/
+dist/
+*.egg-info/
+.eggs/
 
-# PyCharm / IDEA
-.idea/
+# Logs
+*.log
 
-# OS junk
+# OS / File System
 .DS_Store
 Thumbs.db
+
+# -------------------------
+# VS Code
+# -------------------------
+.vscode/
+
+# -------------------------
+# JetBrains / PyCharm
+# -------------------------
+.idea/
+
+# -------------------------
+# Jupyter / IPython
+# -------------------------
+.ipynb_checkpoints/
+
+# -------------------------
+# Flask / Django / Other frameworks
+# -------------------------
+instance/
+*.sqlite3

@@ -3,4 +3,6 @@ python-dotenv
 requests
 pypdf
 Pillow
+numpy
+youtube-transcript-api
 youtube-transcript-api

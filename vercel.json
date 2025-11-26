@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "framework": null,
+  "functions": {
+    "api/**/*.py": {
+      "memory": 1024,
+      "maxDuration": 60,
+      "runtime": "python3.12",
+      "excludeFiles": "{.venv/**,uploads/**,*.pdf,*.pt,*.pth,*.ckpt,torch/**,cv2/**,numpy.libs/**,scipy.libs/**,pymupdf/**}"
+    }
+  },
+  "build": {
+    "env": {
+      "VERCEL_BUILD_SYSTEM_REPORT": "1",
+      "PYTHONUNBUFFERED": "1"
+    }
+  }
+}

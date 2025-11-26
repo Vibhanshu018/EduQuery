@@ -1,56 +1,12 @@
-# -------------------------
-# Python
-# -------------------------
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.so
-
-# Byte-compiled
-*.pyc
-
-# Virtual Environments
 .venv/
+.venv
 venv/
-env/
-
-# Environment Variables
-.env
-
-# Distribution / Packaging
-build/
-dist/
-*.egg-info/
-.eggs/
-
-# Logs
-*.log
-
-# OS / File System
-.DS_Store
-Thumbs.db
-
-# -------------------------
-# VS Code
-# -------------------------
-.vscode/
-
-# -------------------------
-# JetBrains / PyCharm
-# -------------------------
-.idea/
-
-# -------------------------
-# Jupyter / IPython
-# -------------------------
-.ipynb_checkpoints/
-
-# -------------------------
-# Flask / Django / Other frameworks
-# -------------------------
-instance/
-*.sqlite3
-OS_Unit_1_(Notes)[1].pdf
-# or, if you never want to track PDFs:
-# *.pdf
+__pycache__/
+uploads/
+*.dll
+*.pyd
+*.lib
+*.bin
+*.pt
+*.onnx
+*.pickle

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}YouTube & Notes · Study Chat{% endblock %}
+
+{% block content %}
+<div class="card">
+    <span class="pill">Step 1 · Input</span>
+    <h1 style="margin-top:0.9rem; font-size:1.75rem;">
+        YouTube link ya notes daalo · AI se notes banao
+    </h1>
+    <p class="muted" style="margin-top:0.4rem; max-width:640px;">
+        YouTube lecture ka link, apne khud ke notes ya koi bhi concept ka text
+        yahan paste karo. Next screen par AI notes bana dega aur phir aap chat
+        karke doubts clear kar sakte ho.
+    </p>
+
+    <form action="{{ url_for('study_result_page') }}" method="post"
+          style="margin-top:1.4rem; display:flex; flex-direction:column; gap:1.1rem;">
+        <div>
+            <label for="youtube_url">YouTube link (optional)</label>
+            <input type="text" id="youtube_url" name="youtube_url"
+                   placeholder="https://www.youtube.com/watch?v=..." />
+            <div class="muted">
+                Sirf link doge to transcript se notes banenge. Saath me extra text bhi add kar sakte ho.
+            </div>
+        </div>
+
+        <div>
+            <label for="notes">Notes / Text</label>
+            <textarea id="notes" name="notes"
+                      placeholder="Yahan apne handwritten notes type/paste karo, ya kisi concept ka raw text daalo..."></textarea>
+        </div>
+
+        <div class="input-row">
+            <div>
+                <label for="language">Output Language / Bhasha</label>
+                <select id="language" name="language">
+                    <option value="English">English</option>
+                    <option value="Hinglish">Hinglish (English + Hindi mix)</option>
+                    <option value="Hindi">Hindi</option>
+                    <option value="Spanish">Spanish</option>
+                    <option value="French">French</option>
+                </select>
+            </div>
+            <div>
+                <label>&nbsp;</label>
+                <button type="submit" class="btn-primary" style="width:100%; margin-top:0.35rem;">
+                    Generate Notes & Start Chat →
+                </button>
+            </div>
+        </div>
+
+        <p class="muted">
+            Tip: “OS Deadlock lecture 3 (Gate level)” jaisa specific topic dene se zyada focused notes milte hain.
+        </p>
+    </form>
+</div>
+{% endblock %}

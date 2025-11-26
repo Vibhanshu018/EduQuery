@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}Generated Questions { endblock %}
+
+{% block content %}
+
+<!-- ===========================
+      HEADING
+=========================== -->
+<div class="card">
+    <span class="pill">DOCUMENT · GENERATED QUESTIONS</span>
+
+    <h1 style="margin-top:0.8rem; font-size:1.8rem;">
+        Questions generated from your document
+    </h1>
+
+    <p class="muted" style="margin-top:0.4rem; max-width:650px;">
+        Neeche AI ne document se questions banaye hain. Language: {{ language }}.
+    </p>
+
+    <!-- ===========================
+          IF MODEL RETURNED RAW JSON
+    =========================== -->
+    {% if questions is mapping and questions.raw %}
+        <p class="error">Model ne valid JSON nahi diya. Raw output:</p>
+        <pre style="white-space:pre-wrap; font-size:0.9rem;">{{ questions.raw }}</pre>
+
+    {% else %}
+
+        <!-- ===========================
+              CLEAN FORMATTING
+        =========================== -->
+        {% if questions is mapping %}
+            <!-- Single Question-Answer Pair -->
+            <div class="qa-block" style="margin-top:1rem; background:#0d1b2a; padding:1rem; border-radius:10px;">
+                <h3 style="color:#facc15; margin-bottom:0.5rem;">Question</h3>
+                <p style="white-space:pre-wrap;">{{ questions.question }}</p>
+
+                {% if questions.answer %}
+                <h3 style="color:#38bdf8; margin-top:1rem;">Answer</h3>
+                <p style="white-space:pre-wrap;">{{ questions.answer }}</p>
+                {% endif %}
+            </div>
+
+        {% else %}
+            <!-- MULTIPLE QUESTIONS -->
+            <ol style="margin-top:1.2rem; padding-left:1.3rem; font-size:1rem;">
+                {% for q in questions %}
+                    <li style="margin-bottom:1.4rem;">
+
+                        <!-- QUESTION TEXT -->
+                        <div style="font-weight:600; margin-bottom:0.4rem; font-size:1.05rem;">
+                            {{ q.question }}
+                        </div>
+
+                        <!-- MCQ OPTIONS -->
+                        {% if q.choices %}
+                            <ul style="list-style:none; padding-left:0.6rem; margin:0.3rem 0;" class="muted">
+                                {% for key, val in q.choices.items() %}
+                                    <li><strong>{{ key }}.</strong> {{ val }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+
+                        <!-- ANSWER -->
+                        {% if q.answer %}
+                            <div style="margin-top:0.4rem; font-size:0.9rem; color:#facc15;">
+                                <strong>Answer:</strong> {{ q.answer }}
+                            </div>
+                        {% endif %}
+
+                    </li>
+                {% endfor %}
+            </ol>
+        {% endif %}
+    {% endif %}
+
+    <div style="margin-top:1.5rem; display:flex; gap:0.8rem; flex-wrap:wrap;">
+        <a href="{{ url_for('process_file', filename=filename) }}" class="btn-secondary">
+            Generate again from same file
+        </a>
+        <a href="{{ url_for('index') }}" class="btn-primary">
+            Back to Home
+        </a>
+    </div>
+</div>
+
+
+<!-- ===========================
+      CHAT ABOUT THIS DOCUMENT
+=========================== -->
+<div class="card" style="margin-top:1.8rem;">
+    <div class="badge">STEP 2 · DOUBT SOLVING</div>
+
+    <h2 style="margin-top:0.8rem; font-size:1.5rem;">
+        Chat with AI about these questions
+    </h2>
+    <p class="muted" style="margin-top:0.4rem; max-width:650px;">
+        Ab aap doubts puch sakte ho — “Explain Q1”, “simple words me samjhao”, 
+        “5 more MCQs based on Q3”, “summarize the whole topic”, etc.
+    </p>
+
+    <div class="chat-box" style="margin-top:1rem;">
+        <div id="docChatMessages" class="chat-messages"></div>
+
+        <form id="docChatForm" class="chat-input-row">
+            <textarea id="docChatInput" name="question"
+                      placeholder="Ask anything about these questions..."
+                      required></textarea>
+
+            <div style="display:flex; flex-direction:column; gap:0.4rem;">
+                <select id="docChatLanguage" name="language" style="width:150px;">
+                    <option value="English" {% if language == 'English' %}selected{% endif %}>English</option>
+                    <option value="Hinglish" {% if language == 'Hinglish' %}selected{% endif %}>Hinglish</option>
+                    <option value="Hindi" {% if language == 'Hindi' %}selected{% endif %}>Hindi</option>
+                </select>
+                <button type="submit" class="btn-primary">Send</button>
+            </div>
+        </form>
+
+        <div id="docChatError" class="error" style="display:none;"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+    (function () {
+        const form = document.getElementById("docChatForm");
+        const input = document.getElementById("docChatInput");
+        const langSel = document.getElementById("docChatLanguage");
+        const msgs = document.getElementById("docChatMessages");
+        const errBox = document.getElementById("docChatError");
+
+        function addMessage(text, who) {
+            const div = document.createElement("div");
+            div.classList.add("msg", who === "user" ? "msg-user" : "msg-bot");
+            div.textContent = text;
+            msgs.appendChild(div);
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        form.addEventListener("submit", async function (e) {
+            e.preventDefault();
+            errBox.style.display = "none";
+
+            const question = input.value.trim();
+            if (!question) return;
+
+            addMessage(question, "user");
+            input.value = "";
+
+            addMessage("Thinking...", "bot");
+            const loadingNode = msgs.lastChild;
+
+            const fd = new FormData();
+            fd.append("question", question);
+            fd.append("language", langSel.value);
+
+            try {
+                const res = await fetch("{{ url_for('chat_file', filename=filename) }}", {
+                    method: "POST",
+                    body: fd
+                });
+
+                const data = await res.json();
+                msgs.removeChild(loadingNode);
+
+                if (!res.ok || data.status !== "ok") {
+                    throw new Error(data.error || "Server error");
+                }
+
+                addMessage(
+                    typeof data.answer === "string"
+                        ? data.answer
+                        : JSON.stringify(data.answer),
+                    "bot"
+                );
+
+            } catch (err) {
+                msgs.removeChild(loadingNode);
+                errBox.textContent = err.message;
+                errBox.style.display = "block";
+            }
+        });
+    })();
+</script>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Login / Sign up{% endblock %}
+
+{% block content %}
+<div class="card">
+  <span class="pill">Account · Login / Sign up</span>
+  <h1 style="margin-top:0.9rem; font-size:1.7rem;">
+    Welcome to RAG Study Buddy
+  </h1>
+  <p class="muted" style="margin-top:0.3rem; max-width:620px;">
+    Apna account bana lo notes, questions aur chat history save karne ke liye.
+    Ya phir directly <strong>Guest</strong> mode me continue karo.
+  </p>
+
+  {% if error %}
+    <div class="error" style="margin-top:0.8rem;">{{ error }}</div>
+  {% endif %}
+
+  <div style="display:grid; grid-template-columns:1.1fr 1.1fr; gap:1.5rem; margin-top:1.3rem;">
+    <!-- Login -->
+    <div style="border-radius:16px; padding:1.2rem 1.4rem; border:1px solid rgba(148,163,184,0.4); background:rgba(15,23,42,0.9);">
+      <div class="badge">Existing user</div>
+      <h2 style="margin-top:0.7rem; font-size:1.2rem;">Login</h2>
+
+      <form method="post" action="{{ url_for('login') }}" style="margin-top:0.7rem; display:flex; flex-direction:column; gap:0.7rem;">
+        <div>
+          <label>Email</label>
+          <input type="email" name="email" required />
+        </div>
+        <div>
+          <label>Password</label>
+          <input type="password" name="password" required />
+        </div>
+        <button type="submit" class="btn-primary" style="margin-top:0.5rem; align-self:flex-start;">
+          Login
+        </button>
+      </form>
+    </div>
+
+    <!-- Sign up -->
+    <div style="border-radius:16px; padding:1.2rem 1.4rem; border:1px solid rgba(148,163,184,0.4); background:rgba(15,23,42,0.9);">
+      <div class="badge">New here?</div>
+      <h2 style="margin-top:0.7rem; font-size:1.2rem;">Create account</h2>
+
+      <form method="post" action="{{ url_for('signup') }}" style="margin-top:0.7rem; display:flex; flex-direction:column; gap:0.7rem;">
+        <div>
+          <label>Name</label>
+          <input type="text" name="name" required />
+        </div>
+        <div>
+          <label>Email</label>
+          <input type="email" name="email" required />
+        </div>
+        <div>
+          <label>Password</label>
+          <input type="password" name="password" required minlength="6" />
+        </div>
+        <button type="submit" class="btn-primary" style="margin-top:0.5rem; align-self:flex-start;">
+          Sign up
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Guest -->
+  <div style="margin-top:1.7rem; padding-top:1.2rem; border-top:1px dashed rgba(148,163,184,0.4); display:flex; flex-wrap:wrap; gap:0.8rem; align-items:center; justify-content:space-between;">
+    <div class="muted" style="font-size:0.85rem; max-width:430px;">
+      Sirf try karna hai? Account ke bina bhi RAG Study Buddy use kar sakte ho.
+      History iss browser mein guest mode ke under save hogi.
+    </div>
+    <a href="{{ url_for('continue_as_guest') }}" class="btn-secondary">
+      Continue as Guest
+    </a>
+  </div>
+</div>
+{% endblock %}

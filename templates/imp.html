@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Important Questions from Papers{% endblock %}
+
+{% block content %}
+<div class="card">
+    <span class="pill">Past Papers · Important Questions</span>
+    <h1 style="margin-top:0.9rem; font-size:1.7rem;">
+        Multiple question papers se important questions shortlist karo
+    </h1>
+    <p class="muted" style="margin-top:0.4rem; max-width:650px;">
+        Yahan multiple PDFs / question papers upload karo. Model sabko combine karke
+        sabse high-yield questions shortlist karke dega (repeated + core topics).
+    </p>
+
+    <form id="importantForm" style="margin-top:1.3rem; display:flex; flex-direction:column; gap:1.1rem;">
+        <div>
+            <label for="papers">Upload question papers (multiple allowed)</label>
+            <input type="file" id="papers" name="papers" multiple />
+            <div class="muted">Allowed: PDF, TXT, images. Max kuch papers ek sath rakh lo.</div>
+        </div>
+
+        <div class="input-row">
+            <div>
+                <label for="num_questions">Number of important questions</label>
+                <input type="number" id="num_questions" name="num_questions" value="20" min="5" max="100" />
+            </div>
+            <div>
+                <label for="language">Language</label>
+                <select id="language" name="language">
+                    <option value="English">English</option>
+                    <option value="Hinglish">Hinglish</option>
+                    <option value="Hindi">Hindi</option>
+                </select>
+            </div>
+        </div>
+
+        <div>
+            <button type="submit" class="btn-primary">Shortlist Important Questions →</button>
+        </div>
+    </form>
+
+    <div id="importantError" class="error" style="display:none;"></div>
+
+    <div id="importantResults" style="margin-top:1.5rem;"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const form = document.getElementById('importantForm');
+    const errorBox = document.getElementById('importantError');
+    const resultsBox = document.getElementById('importantResults');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorBox.style.display = 'none';
+        resultsBox.innerHTML = '';
+
+        const files = document.getElementById('papers').files;
+        if (!files || files.length === 0) {
+            errorBox.textContent = "Please upload at least one question paper.";
+            errorBox.style.display = 'block';
+            return;
+        }
+
+        const formData = new FormData();
+        for (const f of files) {
+            formData.append('papers', f);
+        }
+        formData.append('num_questions', document.getElementById('num_questions').value || '20');
+        formData.append('language', document.getElementById('language').value || 'English');
+
+        try {
+            const res = await fetch('{{ url_for("important_questions") }}', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (!res.ok || data.status !== 'ok') {
+                throw new Error(data.error || 'Server error');
+            }
+
+            const list = data.important_questions;
+            if (!Array.isArray(list)) {
+                resultsBox.innerHTML = "<p class='muted'>Model returned unexpected format.</p>";
+                return;
+            }
+
+            let html = "<ol style='margin-top:0.8rem; padding-left:1.2rem; font-size:0.9rem;'>";
+            for (const item of list) {
+                html += "<li style='margin-bottom:0.9rem;'>";
+                html += "<strong>" + (item.question || "") + "</strong>";
+                if (item.reason) {
+                    html += "<div class='muted' style='margin-top:0.3rem;'>Reason: " + item.reason + "</div>";
+                }
+                html += "</li>";
+            }
+            html += "</ol>";
+            resultsBox.innerHTML = html;
+        } catch (err) {
+            errorBox.textContent = err.message;
+            errorBox.style.display = 'block';
+        }
+    });
+</script>
+{% endblock %}

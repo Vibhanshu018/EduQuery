@@ -1,0 +1,15 @@
+flask
+python-dotenv
+requests
+PyPDF2
+pypdf
+pymupdf
+Pillow
+numpy
+pdf2image
+pytesseract
+easyocr
+torch
+sentence-transformers
+youtube-transcript-api
+   

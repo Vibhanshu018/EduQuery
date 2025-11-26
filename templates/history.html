@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}History & Recent Activity{% endblock %}
+
+{% block content %}
+<div class="card">
+    <span class="pill">History · Recent Activity</span>
+    <h1 style="margin-top:0.9rem; font-size:1.7rem;">
+        Your uploads & chats on RAG Study Buddy
+    </h1>
+    <p class="muted" style="margin-top:0.4rem; max-width:640px;">
+        Yaha pe tumhare is browser/session ke recent documents aur AI ke saath ki gayi baatein dikhenge.
+        Same laptop / browser use karoge to history yahi accumulate hogi.
+    </p>
+</div>
+
+<div class="card" style="margin-top:1.5rem;">
+    <div class="badge">Uploads</div>
+    <h2 style="margin-top:0.8rem; font-size:1.3rem;">Recent documents</h2>
+
+    {% if docs %}
+        <ul style="list-style:none; padding-left:0; margin-top:1rem;">
+            {% for d in docs %}
+                <li style="padding:0.7rem 0; border-bottom:1px solid rgba(148,163,184,0.25); display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+                    <div>
+                        <div style="font-weight:600;">{{ d.original_name }}</div>
+                        <div class="muted" style="font-size:0.8rem;">
+                            Uploaded at {{ d.uploaded_at.strftime("%d %b %Y, %I:%M %p") }}
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                        <a href="{{ url_for('process_file', filename=d.stored_filename) }}" class="btn-secondary">
+                            Open Question Generator
+                        </a>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="muted" style="margin-top:1rem;">
+            Abhi tak koi document upload nahi hua. Document Q&A page se PDF / notes upload karo.
+        </p>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-top:1.5rem;">
+    <div class="badge">Chats</div>
+    <h2 style="margin-top:0.8rem; font-size:1.3rem;">Recent chats with AI</h2>
+    <p class="muted" style="margin-top:0.3rem; max-width:640px;">
+        Neeche tumhare latest questions aur AI ke replies dikh rahe hain
+        (study chat + document chat mix).
+    </p>
+
+    <div class="chat-box" style="margin-top:1rem; max-height:420px;">
+        <div class="chat-messages" id="historyMessages">
+            {% if messages %}
+                {% for m in messages|reverse %}
+                    <div class="msg {% if m.role == 'user' %}msg-user{% else %}msg-bot{% endif %}">
+                        <div style="font-size:0.8rem; opacity:0.8;">
+                            {% if m.source == 'doc_chat' %}
+                                📄 Doc chat
+                                {% if m.filename %} · {{ m.filename }}{% endif %}
+                            {% else %}
+                                🎓 Study chat
+                            {% endif %}
+                            · {{ m.created_at.strftime("%d %b %Y %H:%M") }}
+                        </div>
+                        <div style="margin-top:0.25rem;">
+                            {{ m.text }}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="muted">
+                    Abhi tak koi chat nahi hua. Study page ya Document Q&A se AI se baat start karo.
+                </p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

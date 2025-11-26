@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}EduQuery – Specs{% endblock %}
+
+{% block content %}
+<div class="card">
+
+    <span class="pill">Specs · Overview</span>
+    <h1 style="margin-top:0.9rem; font-size:2rem;">
+        AI powered RAG Study Assistant
+    </h1>
+    <p class="muted" style="margin-top:0.4rem; max-width:650px; font-size:0.96rem;">
+        Ek hi jagah se padhai ka full stack: documents se questions, YouTube se notes,
+        multilingual study chat, aur multiple question papers se important questions.
+    </p>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem; margin-top:1.7rem;">
+        <div class="card" style="padding:1rem;">
+            <div class="badge">Engine</div>
+            <h3 style="margin:0.6rem 0 0.3rem; font-size:1rem;">RAG + Mistral</h3>
+            <ul class="muted" style="margin:0; padding-left:1.1rem; font-size:0.86rem;">
+                <li>Mistral Chat API for answers</li>
+                <li>SentenceTransformers SBERT embeddings</li>
+                <li>Cosine similarity retrieval</li>
+            </ul>
+        </div>
+
+        <div class="card" style="padding:1rem;">
+            <div class="badge">Inputs</div>
+            <h3 style="margin:0.6rem 0 0.3rem; font-size:1rem;">Docs · Images · YouTube</h3>
+            <ul class="muted" style="margin:0; padding-left:1.1rem; font-size:0.86rem;">
+                <li>PDF, TXT, MD uploads</li>
+                <li>EasyOCR for scanned pages</li>
+                <li>YouTube transcript → notes</li>
+            </ul>
+        </div>
+
+        <div class="card" style="padding:1rem;">
+            <div class="badge">Students</div>
+            <h3 style="margin:0.6rem 0 0.3rem; font-size:1rem;">Exam Features</h3>
+            <ul class="muted" style="margin:0; padding-left:1.1rem; font-size:0.86rem;">
+                <li>MCQ / short / long questions</li>
+                <li>Study chat with step-by-step explanations</li>
+                <li>Important questions from multiple papers</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Upload -->
+    <div style="margin-top:2rem; padding-top:1.4rem; border-top:1px solid rgba(148,163,184,0.3);">
+        <h2 style="margin:0 0 0.6rem; font-size:1.2rem;">Upload your own notes / question paper</h2>
+        <p class="muted" style="margin:0 0 0.8rem; max-width:620px;">
+            Yahan se apna PDF, TXT ya image upload karo — next page par exam questions generate ho jayenge.
+        </p>
+
+        <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data"
+              style="display:flex; gap:0.8rem; align-items:center; flex-wrap:wrap;">
+            <input type="file" name="file"
+                   style="max-width:320px; padding:0.6rem 0.8rem; border-radius:0.7rem;
+                          border:1px solid var(--border-subtle); background:#020617; color:var(--text-main);" />
+            <button type="submit" class="btn-primary">Upload & Generate →</button>
+            <span class="muted" style="font-size:0.78rem;">Allowed: PDF, TXT, images</span>
+        </form>
+    </div>
+
+    <div style="margin-top:1.8rem; display:flex; flex-wrap:wrap; gap:0.8rem;">
+        <a href="{{ url_for('study_page') }}" class="btn-secondary">YouTube & Notes</a>
+        <a href="{{ url_for('use_example') }}" class="btn-secondary">Try Example PDF</a>
+        <a href="{{ url_for('important_questions_page') }}" class="btn-secondary">Important Questions</a>
+    </div>
+</div>
+{% endblock %}

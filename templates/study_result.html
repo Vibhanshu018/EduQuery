@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Study Results & Chat{% endblock %}
+
+{% block content %}
+<div class="card">
+    <span class="pill">Step 2 · Notes & Chat</span>
+    <h1 style="margin-top:0.9rem; font-size:1.75rem;">
+        AI Notes ready · Ab doubt puchho
+    </h1>
+
+    <div class="chat-wrapper">
+        <!-- Left: AI notes -->
+        <div style="background:rgba(15,23,42,0.98); border-radius:var(--radius-lg);
+                    border:1px solid rgba(148,163,184,0.35); padding:1rem 1.2rem;
+                    overflow-y:auto; max-height:460px;">
+            <div class="badge">AI Notes ({{ language }})</div>
+            <h3 style="margin:0.7rem 0 0.3rem;">Initial Summary / Notes</h3>
+            <div style="font-size:0.9rem; line-height:1.5; white-space:pre-wrap;">
+                {{ first_answer }}
+            </div>
+        </div>
+
+        <!-- Right: Chat -->
+        <div class="chat-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                <div class="badge">Chat with AI</div>
+                <span class="muted">Language: {{ language }}</span>
+            </div>
+
+            <div id="chatMessages" class="chat-messages">
+                <div class="msg msg-user">
+                    <strong>You:</strong>
+                    <div style="margin-top:0.2rem; white-space:pre-wrap;">{{ original_message }}</div>
+                </div>
+                <div class="msg msg-bot">
+                    <strong>AI:</strong>
+                    <div style="margin-top:0.2rem; white-space:pre-wrap;">{{ first_answer }}</div>
+                </div>
+            </div>
+
+            <form id="chatForm" class="chat-input-row">
+                <textarea id="chatInput"
+                          placeholder="Agla sawaal puchho – 'simple words me samjhao', '5 MCQ bana do', 'exam point of view se likho'..."></textarea>
+                <button type="submit" class="btn-primary">Send</button>
+            </form>
+            <div id="chatError" class="error" style="display:none;"></div>
+            <div class="muted" style="margin-top:0.4rem;">
+                Pro tip: “Explain like I am in 10th”, “Gate level depth me samjhao”, etc.
+            </div>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="languageHidden" value="{{ language }}">
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const chatMessages = document.getElementById('chatMessages');
+    const chatError = document.getElementById('chatError');
+    const languageHidden = document.getElementById('languageHidden');
+
+    function appendMessage(text, role) {
+        const div = document.createElement('div');
+        div.classList.add('msg', role === 'user' ? 'msg-user' : 'msg-bot');
+        div.innerHTML = `<strong>${role === 'user' ? 'You' : 'AI'}:</strong>
+                         <div style="margin-top:0.2rem; white-space:pre-wrap;">${text}</div>`;
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        chatError.style.display = 'none';
+
+        const msg = chatInput.value.trim();
+        if (!msg) return;
+
+        appendMessage(msg, 'user');
+        chatInput.value = '';
+
+        try {
+            const formData = new FormData();
+            formData.append('message', msg);
+            formData.append('language', languageHidden.value || 'English');
+
+            const res = await fetch('{{ url_for("study_chat") }}', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (!res.ok || data.status !== 'ok') {
+                throw new Error(data.error || 'Server error');
+            }
+
+            const reply = data.mode === 'youtube_notes' ? data.notes : data.answer;
+            appendMessage(reply, 'bot');
+        } catch (err) {
+            chatError.textContent = err.message;
+            chatError.style.display = 'block';
+        }
+    });
+</script>
+{% endblock %}

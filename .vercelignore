@@ -1,0 +1,5 @@
+uploads/
+rag_study_buddy.db
+__pycache__/
+.venv/
+node_modules/

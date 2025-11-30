@@ -1,106 +1,170 @@
 {% extends "base.html" %}
-{% block title %}Important Questions from Papers{% endblock %}
+{% block title %}Important Questions · RAG Study Buddy{% endblock %}
 
 {% block content %}
 <div class="card">
-    <span class="pill">Past Papers · Important Questions</span>
-    <h1 style="margin-top:0.9rem; font-size:1.7rem;">
-        Multiple question papers se important questions shortlist karo
+    <span class="pill">QUESTION PAPERS · IMPORTANT Qs</span>
+
+    <h1 style="margin-top:0.8rem; font-size:1.7rem;">
+        Upload multiple question papers & shortlist important questions
     </h1>
-    <p class="muted" style="margin-top:0.4rem; max-width:650px;">
-        Yahan multiple PDFs / question papers upload karo. Model sabko combine karke
-        sabse high-yield questions shortlist karke dega (repeated + core topics).
+
+    <p class="muted" style="margin-top:0.4rem; max-width:680px;">
+        Yahan par aap multiple past papers / PDFs / images upload kar sakte ho. 
+        AI in sab ka analysis karke sabse important, high-weightage questions shortlist karega.
     </p>
 
-    <form id="importantForm" style="margin-top:1.3rem; display:flex; flex-direction:column; gap:1.1rem;">
-        <div>
-            <label for="papers">Upload question papers (multiple allowed)</label>
-            <input type="file" id="papers" name="papers" multiple />
-            <div class="muted">Allowed: PDF, TXT, images. Max kuch papers ek sath rakh lo.</div>
-        </div>
+    <form id="importantForm" enctype="multipart/form-data" style="margin-top:1.2rem;">
+        <div style="display:flex; flex-direction:column; gap:0.9rem;">
 
-        <div class="input-row">
             <div>
-                <label for="num_questions">Number of important questions</label>
-                <input type="number" id="num_questions" name="num_questions" value="20" min="5" max="100" />
+                <label for="papers">Upload question papers (multiple allowed)</label>
+                <input id="papers" name="papers" type="file" multiple
+                       accept=".pdf,.txt,.md,.png,.jpg,.jpeg,.tiff,.bmp" />
+                <div class="muted" style="margin-top:0.25rem;">
+                    Supported: PDF, images (jpg, png, etc.), txt, md.  
+                    Tip: select 3–5 papers ek saath.
+                </div>
             </div>
-            <div>
-                <label for="language">Language</label>
-                <select id="language" name="language">
-                    <option value="English">English</option>
-                    <option value="Hinglish">Hinglish</option>
-                    <option value="Hindi">Hindi</option>
-                </select>
-            </div>
-        </div>
 
-        <div>
-            <button type="submit" class="btn-primary">Shortlist Important Questions →</button>
+            <div class="input-row">
+                <div>
+                    <label for="num_questions">How many important questions?</label>
+                    <input id="num_questions" name="num_questions" type="number" min="5" max="100" value="20" />
+                </div>
+                <div>
+                    <label for="imp_language">Output language</label>
+                    <select id="imp_language" name="language">
+                        <option value="English">English</option>
+                        <option value="Hinglish">Hinglish</option>
+                        <option value="Hindi">Hindi</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:0.8rem; flex-wrap:wrap; margin-top:0.4rem;">
+                <button type="submit" class="btn-primary">
+                    Generate important questions
+                </button>
+                <a href="{{ url_for('index') }}" class="btn-secondary">
+                    Back to Home
+                </a>
+            </div>
+
+            <div id="impError" class="error" style="display:none;"></div>
         </div>
     </form>
+</div>
 
-    <div id="importantError" class="error" style="display:none;"></div>
+<div class="card" style="margin-top:1.6rem;">
+    <div class="badge">RESULT · SHORTLISTED QUESTIONS</div>
 
-    <div id="importantResults" style="margin-top:1.5rem;"></div>
+    <h2 style="margin-top:0.8rem; font-size:1.4rem;">
+        AI-shortlisted high-yield questions
+    </h2>
+    <p class="muted" style="margin-top:0.3rem; max-width:680px;">
+        Neeche AI ne sab uploaded papers se sabse important questions pick kiye hain.  
+        Har question ke saath chhota sa “why important” reason bhi diya jayega.
+    </p>
+
+    <div id="impLoading" class="muted" style="margin-top:0.8rem; display:none;">
+        Processing papers... thoda time lag sakta hai large PDFs ke liye ⚙️
+    </div>
+
+    <div id="impResults" style="margin-top:1rem;">
+        <p class="muted">
+            Abhi tak koi result nahi. Pehle upar se papers upload karke "Generate" dabao.
+        </p>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    const form = document.getElementById('importantForm');
-    const errorBox = document.getElementById('importantError');
-    const resultsBox = document.getElementById('importantResults');
+(function () {
+    const form      = document.getElementById("importantForm");
+    const errorBox  = document.getElementById("impError");
+    const loadingEl = document.getElementById("impLoading");
+    const resultsEl = document.getElementById("impResults");
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        errorBox.style.display = 'none';
-        resultsBox.innerHTML = '';
-
-        const files = document.getElementById('papers').files;
-        if (!files || files.length === 0) {
-            errorBox.textContent = "Please upload at least one question paper.";
-            errorBox.style.display = 'block';
+    function renderResults(data) {
+        if (!data || data.status !== "ok") {
+            resultsEl.innerHTML = "<p class='error'>Could not parse server response.</p>";
             return;
         }
 
-        const formData = new FormData();
-        for (const f of files) {
-            formData.append('papers', f);
+        const qs = data.important_questions;
+        if (!qs || (Array.isArray(qs) && qs.length === 0)) {
+            resultsEl.innerHTML = "<p class='muted'>No important questions returned.</p>";
+            return;
         }
-        formData.append('num_questions', document.getElementById('num_questions').value || '20');
-        formData.append('language', document.getElementById('language').value || 'English');
+
+        // If backend returned raw string
+        if (!Array.isArray(qs)) {
+            resultsEl.innerHTML = "<pre style='white-space:pre-wrap; font-size:0.9rem;'>" +
+                                  (qs.raw || JSON.stringify(qs, null, 2)) +
+                                  "</pre>";
+            return;
+        }
+
+        let html = "<ol style='margin-top:0.6rem; padding-left:1.3rem; font-size:0.95rem;'>";
+        qs.forEach((item) => {
+            html += "<li style='margin-bottom:1rem;'>";
+            html += "<div style='font-weight:600; margin-bottom:0.3rem;'>" +
+                    (item.question || "(no question)") +
+                    "</div>";
+            if (item.reason) {
+                html += "<div class='muted' style='font-size:0.85rem;'>" +
+                        "Why important: " + item.reason +
+                        "</div>";
+            }
+            html += "</li>";
+        });
+        html += "</ol>";
+
+        resultsEl.innerHTML = html;
+    }
+
+    form.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        errorBox.style.display = "none";
+        loadingEl.style.display = "block";
+        resultsEl.innerHTML = "";
+
+        const files = document.getElementById("papers").files;
+        if (!files || files.length === 0) {
+            loadingEl.style.display = "none";
+            errorBox.textContent = "Please upload at least one question paper.";
+            errorBox.style.display = "block";
+            return;
+        }
+
+        const fd = new FormData();
+        for (let i = 0; i < files.length; i++) {
+            fd.append("papers", files[i]);
+        }
+        fd.append("num_questions", document.getElementById("num_questions").value || "20");
+        fd.append("language", document.getElementById("imp_language").value || "English");
 
         try {
-            const res = await fetch('{{ url_for("important_questions") }}', {
-                method: 'POST',
-                body: formData
+            const res  = await fetch("{{ url_for('important_questions') }}", {
+                method: "POST",
+                body: fd,
             });
             const data = await res.json();
-            if (!res.ok || data.status !== 'ok') {
-                throw new Error(data.error || 'Server error');
+            loadingEl.style.display = "none";
+
+            if (!res.ok || data.status !== "ok") {
+                throw new Error(data.error || "Server error");
             }
 
-            const list = data.important_questions;
-            if (!Array.isArray(list)) {
-                resultsBox.innerHTML = "<p class='muted'>Model returned unexpected format.</p>";
-                return;
-            }
-
-            let html = "<ol style='margin-top:0.8rem; padding-left:1.2rem; font-size:0.9rem;'>";
-            for (const item of list) {
-                html += "<li style='margin-bottom:0.9rem;'>";
-                html += "<strong>" + (item.question || "") + "</strong>";
-                if (item.reason) {
-                    html += "<div class='muted' style='margin-top:0.3rem;'>Reason: " + item.reason + "</div>";
-                }
-                html += "</li>";
-            }
-            html += "</ol>";
-            resultsBox.innerHTML = html;
+            renderResults(data);
         } catch (err) {
+            loadingEl.style.display = "none";
             errorBox.textContent = err.message;
-            errorBox.style.display = 'block';
+            errorBox.style.display = "block";
         }
     });
+})();
 </script>
 {% endblock %}

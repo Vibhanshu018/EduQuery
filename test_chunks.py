@@ -1,4 +1,4 @@
-from app import build_chunks_for_file
+from backend.app import build_chunks_for_file
 from pathlib import Path
 import time, traceback
 

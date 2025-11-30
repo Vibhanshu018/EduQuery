@@ -6,3 +6,5 @@ Pillow
 numpy
 youtube-transcript-api
 youtube-transcript-api
+flask-cors
+gunicorn

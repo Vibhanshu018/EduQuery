@@ -1,71 +1,73 @@
 {% extends "base.html" %}
-{% block title %}EduQuery – Specs{% endblock %}
+{% block title %}RAG Study Buddy – Home{% endblock %}
 
 {% block content %}
 <div class="card">
-
-    <span class="pill">Specs · Overview</span>
+    <span class="pill">WELCOME · OVERVIEW</span>
     <h1 style="margin-top:0.9rem; font-size:2rem;">
-        AI powered RAG Study Assistant
+        Your AI-powered study partner for PDFs, YouTube &amp; question papers
     </h1>
-    <p class="muted" style="margin-top:0.4rem; max-width:650px; font-size:0.96rem;">
-        Ek hi jagah se padhai ka full stack: documents se questions, YouTube se notes,
-        multilingual study chat, aur multiple question papers se important questions.
+    <p class="muted" style="margin-top:0.6rem; max-width:700px; font-size:0.9rem;">
+        Upload your notes, paste a YouTube link, or drop multiple question papers.
+        RAG Study Buddy will extract concepts, generate questions, and answer your doubts
+        in English / Hindi / Hinglish.
     </p>
 
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem; margin-top:1.7rem;">
-        <div class="card" style="padding:1rem;">
-            <div class="badge">Engine</div>
-            <h3 style="margin:0.6rem 0 0.3rem; font-size:1rem;">RAG + Mistral</h3>
-            <ul class="muted" style="margin:0; padding-left:1.1rem; font-size:0.86rem;">
-                <li>Mistral Chat API for answers</li>
-                <li>SentenceTransformers SBERT embeddings</li>
-                <li>Cosine similarity retrieval</li>
-            </ul>
-        </div>
-
-        <div class="card" style="padding:1rem;">
-            <div class="badge">Inputs</div>
-            <h3 style="margin:0.6rem 0 0.3rem; font-size:1rem;">Docs · Images · YouTube</h3>
-            <ul class="muted" style="margin:0; padding-left:1.1rem; font-size:0.86rem;">
-                <li>PDF, TXT, MD uploads</li>
-                <li>EasyOCR for scanned pages</li>
-                <li>YouTube transcript → notes</li>
-            </ul>
-        </div>
-
-        <div class="card" style="padding:1rem;">
-            <div class="badge">Students</div>
-            <h3 style="margin:0.6rem 0 0.3rem; font-size:1rem;">Exam Features</h3>
-            <ul class="muted" style="margin:0; padding-left:1.1rem; font-size:0.86rem;">
-                <li>MCQ / short / long questions</li>
-                <li>Study chat with step-by-step explanations</li>
-                <li>Important questions from multiple papers</li>
-            </ul>
-        </div>
+    <div style="margin-top:1.4rem; display:flex; flex-wrap:wrap; gap:1rem;">
+        <a href="{{ url_for('study_page') }}" class="btn-primary">
+            Start with YouTube &amp; Notes
+        </a>
+        <a href="{{ url_for('history') }}" class="btn-secondary">
+            View my recent history
+        </a>
     </div>
+</div>
 
-    <!-- Upload -->
-    <div style="margin-top:2rem; padding-top:1.4rem; border-top:1px solid rgba(148,163,184,0.3);">
-        <h2 style="margin:0 0 0.6rem; font-size:1.2rem;">Upload your own notes / question paper</h2>
-        <p class="muted" style="margin:0 0 0.8rem; max-width:620px;">
-            Yahan se apna PDF, TXT ya image upload karo — next page par exam questions generate ho jayenge.
+<div style="margin-top:1.5rem; display:grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1.2fr); gap:1.2rem;">
+    <!-- Document upload -->
+    <div class="card">
+        <span class="pill">STEP 1 · DOCUMENT → QUESTIONS</span>
+        <h2 style="margin-top:0.8rem; font-size:1.4rem;">Upload a document to generate questions</h2>
+        <p class="muted" style="margin-top:0.4rem;">
+            Upload PDF / images / text. The app will create MCQs / short / long questions,
+            then you can chat with AI on top of the same document.
         </p>
 
-        <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data"
-              style="display:flex; gap:0.8rem; align-items:center; flex-wrap:wrap;">
-            <input type="file" name="file"
-                   style="max-width:320px; padding:0.6rem 0.8rem; border-radius:0.7rem;
-                          border:1px solid var(--border-subtle); background:#020617; color:var(--text-main);" />
-            <button type="submit" class="btn-primary">Upload & Generate →</button>
-            <span class="muted" style="font-size:0.78rem;">Allowed: PDF, TXT, images</span>
+        <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" style="margin-top:1rem;">
+            <label>Select a file (PDF / image / txt)</label>
+            <input type="file" name="file" required />
+            <p class="muted" style="margin-top:0.3rem;">
+                Max size depends on your server settings.
+            </p>
+
+            <div style="margin-top:0.9rem; display:flex; flex-wrap:wrap; gap:0.7rem;">
+                <button type="submit" class="btn-primary">
+                    Upload &amp; Generate Questions
+                </button>
+                {% if example_name %}
+                <a href="{{ url_for('use_example') }}" class="btn-secondary">
+                    Try with example file ({{ example_name }})
+                </a>
+                {% endif %}
+            </div>
         </form>
     </div>
 
-    <div style="margin-top:1.8rem; display:flex; flex-wrap:wrap; gap:0.8rem;">
-        <a href="{{ url_for('study_page') }}" class="btn-secondary">YouTube & Notes</a>
-        <a href="{{ url_for('use_example') }}" class="btn-secondary">Try Example PDF</a>
-        <a href="{{ url_for('important_questions_page') }}" class="btn-secondary">Important Questions</a>
+    <!-- Quick links / features -->
+    <div class="card">
+        <span class="pill">WHAT YOU CAN DO</span>
+        <ul style="margin-top:0.9rem; padding-left:1.1rem; font-size:0.9rem; line-height:1.6;">
+            <li>Paste a YouTube link + notes → get structured explanation &amp; doubts chat.</li>
+            <li>Upload notes / books → auto-generate MCQs, short and long questions.</li>
+            <li>Upload multiple past papers → shortlist important / repeated questions.</li>
+            <li>History tab → see your previous chats and uploaded documents.</li>
+        </ul>
+
+        <div style="margin-top:1.1rem;">
+            <a href="{{ url_for('important_questions_page') }}" class="btn-secondary">
+                Important Questions from past papers
+            </a>
+        </div>
     </div>
 </div>
 {% endblock %}

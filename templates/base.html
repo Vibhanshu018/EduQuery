@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>{% block title %}EduQuery{%endblock%}</title>
+    <title>{% block title %}RAG Study Buddy{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
         :root {
@@ -79,6 +79,7 @@
             display: flex;
             gap: 1.1rem;
             font-size: 0.9rem;
+            align-items: center;
         }
 
         .nav-link {
@@ -186,56 +187,6 @@
         label { font-size: 0.85rem; color: var(--text-muted); }
         .muted { color: var(--text-muted); font-size: 0.8rem; }
 
-        .input-row {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 1rem;
-        }
-
-        .chat-wrapper {
-            margin-top: 1.5rem;
-            display: grid;
-            grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.2fr);
-            gap: 1.3rem;
-        }
-        .chat-box {
-            background: rgba(15,23,42,0.98);
-            border-radius: var(--radius-lg);
-            border: 1px solid rgba(148,163,184,0.35);
-            padding: 1rem 1.1rem;
-            max-height: 460px;
-            display: flex;
-            flex-direction: column;
-        }
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding-right: 0.4rem;
-            margin-bottom: 0.8rem;
-        }
-        .msg {
-            margin-bottom: 0.9rem;
-            padding: 0.7rem 0.8rem;
-            border-radius: 0.9rem;
-            font-size: 0.88rem;
-            line-height: 1.4;
-        }
-        .msg-user {
-            background: var(--accent-soft);
-            border-bottom-right-radius: 0.2rem;
-            align-self: flex-end;
-        }
-        .msg-bot {
-            background: var(--primary-soft);
-            border-bottom-left-radius: 0.2rem;
-            align-self: flex-start;
-        }
-        .chat-input-row {
-            display: flex;
-            gap: 0.6rem;
-            align-items: flex-end;
-        }
-        .chat-input-row textarea { min-height: 60px; max-height: 90px; }
         .badge {
             display: inline-flex;
             padding: 0.2rem 0.55rem;
@@ -246,7 +197,35 @@
             letter-spacing: 0.03em;
             color: var(--text-muted);
         }
+
         .error { color: var(--danger); font-size: 0.85rem; margin-top: 0.4rem; }
+
+        /* markdown styling for study_result etc. */
+        .markdown-body h1,
+        .markdown-body h2,
+        .markdown-body h3,
+        .markdown-body h4 {
+            color: #e5e7eb;
+            margin-top: 0.8rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .markdown-body strong {
+            color: #facc15;
+        }
+
+        .markdown-body ul,
+        .markdown-body ol {
+            padding-left: 1.2rem;
+            margin: 0.3rem 0 0.6rem;
+        }
+
+        .markdown-body code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            background: rgba(15,23,42,0.9);
+            padding: 0.1rem 0.25rem;
+            border-radius: 4px;
+        }
 
         .footer {
             padding: 1rem 1.5rem 1.8rem;
@@ -258,13 +237,11 @@
         }
 
         @media (max-width: 840px) {
-            .chat-wrapper { grid-template-columns: 1fr; }
             .navbar-inner {
                 flex-direction: column;
                 gap: 0.7rem;
                 align-items: flex-start;
             }
-            .input-row { grid-template-columns: 1fr; }
         }
     </style>
     {% block head_extra %}{% endblock %}
@@ -273,47 +250,15 @@
 <header class="navbar">
     <div class="navbar-inner">
         <div class="brand">
-            <div class="brand-pill">E</div>
-            <span>EduQuery</span>
+            <div class="brand-pill">R</div>
+            <span>RAG Study Buddy</span>
         </div>
-
         <nav class="nav-links">
-            <a href="{{ url_for('index') }}"
-               class="nav-link {% if active == 'home' %}active{% endif %}">
-                Home / Specs
-            </a>
-
-            <a href="{{ url_for('study_page') }}"
-               class="nav-link {% if active == 'study' %}active{% endif %}">
-                YouTube &amp; Notes
-            </a>
-
-            <a href="{{ url_for('use_example') }}"
-               class="nav-link {% if active == 'doc' %}active{% endif %}">
-                Document Q&amp;A
-            </a>
-
-            <a href="{{ url_for('important_questions_page') }}"
-               class="nav-link {% if active == 'important' %}active{% endif %}">
-                Important Qs
-            </a>
-
-            <a href="{{ url_for('history') }}"
-               class="nav-link {% if active == 'history' %}active{% endif %}">
-                History
-            </a>
-
-            {% if g.user %}
-                <span class="nav-link" style="opacity:0.8; cursor:default;">
-                    Hi, {{ g.user.name }}
-                </span>
-                <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
-            {% else %}
-                <a href="{{ url_for('auth_page') }}"
-                   class="nav-link {% if active == 'auth' %}active{% endif %}">
-                    Login / Sign up
-                </a>
-            {% endif %}
+            <a href="{{ url_for('index') }}" class="nav-link {% if active == 'home' %}active{% endif %}">Home / Specs</a>
+            <a href="{{ url_for('study_page') }}" class="nav-link {% if active == 'study' %}active{% endif %}">YouTube &amp; Notes</a>
+            <a href="{{ url_for('use_example') }}" class="nav-link">Document Q&amp;A</a>
+            <a href="{{ url_for('important_questions_page') }}" class="nav-link {% if active == 'important' %}active{% endif %}">Important Qs</a>
+            <a href="{{ url_for('history') }}" class="nav-link {% if active == 'history' %}active{% endif %}">History</a>
         </nav>
     </div>
 </header>

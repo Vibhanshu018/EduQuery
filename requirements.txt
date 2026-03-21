@@ -8,4 +8,5 @@ pypdf
 pillow
 markdown
 youtube-transcript-api==0.6.1
+sentence-transformers
 gunicorn

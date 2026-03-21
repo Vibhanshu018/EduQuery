@@ -1,86 +1,84 @@
 """
-Mistral + Sentence-Transformers client utilities.
+Mistral client utilities.
 
-- Mistral Chat API: chat(prompt) -> str
-- Embeddings: generate_embeddings(texts) -> List[List[float]]
-- Query embedding: embed_query(text) -> List[float]
+- Mistral Chat API:       chat(prompt) -> str
+- Mistral Embeddings API: generate_embeddings(texts) -> List[List[float]]
+- Query embedding:        embed_query(text) -> List[float]
+
+Replaces sentence-transformers/PyTorch (3-4 GB) with Mistral's embedding
+API endpoint — keeping the Docker image under 300 MB on Railway free tier.
 
 Environment Variables:
-    MISTRAL_API_KEY
-    LLM_MODEL (default: mistral-small-latest)
+    MISTRAL_API_KEY  (required)
+    LLM_MODEL        (default: mistral-small-latest)
+    EMBED_MODEL      (default: mistral-embed)
 """
 
 from __future__ import annotations
 import os
-import json
 import time
-import math
 from typing import List, Iterable, Optional
+
 import requests
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
-
-# CONFIG
+# ── Config ────────────────────────────────────────────────────────────────────
 
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 if not MISTRAL_API_KEY:
-    raise ValueError("❌ MISTRAL_API_KEY not found in .env file!")
+    raise ValueError("❌ MISTRAL_API_KEY not found in environment / .env file!")
 
-MISTRAL_BASE_URL = "https://api.mistral.ai/v1/chat/completions"
-LLM_MODEL = os.getenv("LLM_MODEL", "mistral-small-latest")
+MISTRAL_CHAT_URL  = "https://api.mistral.ai/v1/chat/completions"
+MISTRAL_EMBED_URL = "https://api.mistral.ai/v1/embeddings"
+LLM_MODEL         = os.getenv("LLM_MODEL",   "mistral-small-latest")
+EMBED_MODEL       = os.getenv("EMBED_MODEL",  "mistral-embed")
 
-# Requests session
+# ── Shared session ────────────────────────────────────────────────────────────
+
 _session: Optional[requests.Session] = None
 
-
 def _get_session() -> requests.Session:
-    """Return global requests.Session (lazy)."""
     global _session
     if _session is None:
         _session = requests.Session()
     return _session
 
+def _auth_headers() -> dict:
+    return {
+        "Authorization": f"Bearer {MISTRAL_API_KEY}",
+        "Content-Type": "application/json",
+    }
 
+# ── Chat completion ───────────────────────────────────────────────────────────
 
-# CHAT COMPLETION (MISTRAL)
-
-def chat(prompt: str, max_tokens: int = 512, temperature: float = 0.2, timeout: int = 120) -> str:
-    """
-    Send prompt to Mistral Chat Completion API and return the response text.
-    """
-
+def chat(
+    prompt: str,
+    max_tokens: int = 512,
+    temperature: float = 0.2,
+    timeout: int = 120,
+) -> str:
+    """Send a prompt to Mistral Chat and return the response text."""
     payload = {
         "model": LLM_MODEL,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
+        "messages": [{"role": "user", "content": prompt}],
         "temperature": temperature,
-        "max_tokens": max_tokens
+        "max_tokens": max_tokens,
     }
-
-    headers = {
-        "Authorization": f"Bearer {MISTRAL_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
-    sess = _get_session()
+    sess     = _get_session()
     last_exc = None
 
     for attempt in range(3):
         try:
-            r = sess.post(MISTRAL_BASE_URL, json=payload, headers=headers, timeout=timeout)
+            r = sess.post(MISTRAL_CHAT_URL, json=payload, headers=_auth_headers(), timeout=timeout)
             r.raise_for_status()
-
-            data = r.json()
-            return data["choices"][0]["message"]["content"]
+            return r.json()["choices"][0]["message"]["content"]
 
         except requests.HTTPError as he:
             last_exc = he
-            status = he.response.status_code
-            if status in (429,) or (500 <= status < 600):
+            code = he.response.status_code
+            if code == 429 or 500 <= code < 600:
                 time.sleep(1.5 + attempt)
                 continue
             raise
@@ -90,38 +88,12 @@ def chat(prompt: str, max_tokens: int = 512, temperature: float = 0.2, timeout: 
             time.sleep(1 + attempt)
             continue
 
-    raise RuntimeError(f"Mistral request failed after retries: {last_exc}")
+    raise RuntimeError(f"Mistral chat failed after retries: {last_exc}")
 
-
-
-# EMBEDDINGS (SentenceTransformers)
-
-_SBERT = None
-
-
-def _ensure_sbert_loaded(model_name: Optional[str] = None):
-    """Lazy load SentenceTransformer."""
-    global _SBERT
-    if _SBERT is not None:
-        return _SBERT
-
-    try:
-        from sentence_transformers import SentenceTransformer
-    except Exception as e:
-        raise RuntimeError(
-            "sentence-transformers is not installed. Install with: pip install sentence-transformers"
-        ) from e
-
-    model_name = model_name or os.getenv("SBERT_MODEL", "all-MiniLM-L6-v2")
-
-    try:
-        _SBERT = SentenceTransformer(model_name, device="cpu")
-        return _SBERT
-    except Exception as e:
-        raise RuntimeError(f"Failed to load SBERT model '{model_name}': {e}") from e
-
+# ── Embeddings (Mistral API — no PyTorch, no sentence-transformers) ───────────
 
 def _chunk_iterable(iterable: Iterable, size: int):
+    """Yield successive chunks of `size` from an iterable."""
     it = iter(iterable)
     while True:
         chunk = []
@@ -135,36 +107,69 @@ def _chunk_iterable(iterable: Iterable, size: int):
         yield chunk
 
 
-def generate_embeddings(texts: List[str], batch_size: int = 64) -> List[List[float]]:
-    """Return embeddings for list of texts."""
+def generate_embeddings(texts: List[str], batch_size: int = 32) -> List[List[float]]:
+    """
+    Return embeddings for a list of texts using Mistral's embedding API.
+    Batches requests to stay within API limits.
+    """
     if not texts:
         return []
 
-    model = _ensure_sbert_loaded()
-    all_embs = []
+    sess     = _get_session()
+    all_embs: List[List[float]] = []
 
-    for chunk in _chunk_iterable(texts, batch_size):
-        embs = model.encode(chunk, show_progress_bar=False, convert_to_numpy=True)
-        for row in embs:
-            all_embs.append(list(row))
+    for batch in _chunk_iterable(texts, batch_size):
+        payload = {"model": EMBED_MODEL, "input": batch}
+        last_exc = None
+
+        for attempt in range(3):
+            try:
+                r = sess.post(
+                    MISTRAL_EMBED_URL,
+                    json=payload,
+                    headers=_auth_headers(),
+                    timeout=60,
+                )
+                r.raise_for_status()
+                data = r.json()
+                # Mistral returns data sorted by index
+                batch_embs = [item["embedding"] for item in sorted(data["data"], key=lambda x: x["index"])]
+                all_embs.extend(batch_embs)
+                break
+
+            except requests.HTTPError as he:
+                last_exc = he
+                code = he.response.status_code
+                if code == 429 or 500 <= code < 600:
+                    time.sleep(1.5 + attempt)
+                    continue
+                raise
+
+            except Exception as e:
+                last_exc = e
+                time.sleep(1 + attempt)
+                continue
+        else:
+            raise RuntimeError(f"Mistral embeddings failed after retries: {last_exc}")
 
     return all_embs
 
 
 def embed_query(text: str) -> List[float]:
-    """Return embedding for a single query."""
+    """Return embedding for a single query string."""
     if not text:
         return []
-    embs = generate_embeddings([text], batch_size=1)
-    return embs[0] if embs else []
+    result = generate_embeddings([text])
+    return result[0] if result else []
 
 
-
-# TEST
+# ── Quick test ────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     print("Testing Mistral chat...")
     print(chat("Hello! Explain RAG in simple words."))
-    print("Testing embeddings...")
+
+    print("\nTesting Mistral embeddings...")
     vec = embed_query("machine learning")
-    print(len(vec), "dimensions")
+    print(f"Embedding dimensions: {len(vec)}")
+    print(f"First 5 values: {vec[:5]}")

@@ -316,6 +316,8 @@ def extract_text_from_pdf(path: str):
 
 def extract_images_from_pdf(path: str, max_images_per_page: int = 3):
     images = []
+    if fitz is None:
+        return images
     try:
         doc = fitz.open(path)
     except Exception:

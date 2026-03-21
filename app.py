@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Optional, List
 from datetime import datetime
 
+
 import markdown
 import numpy as np
 from dotenv import load_dotenv
@@ -33,7 +34,10 @@ from model_client import chat as model_chat, generate_embeddings, embed_query
 
 # pdf / image libs
 import pypdf
-import fitz  # PyMuPDF
+try:
+    import fitz
+except ImportError:
+    fitz = None
 from PIL import Image
 
 

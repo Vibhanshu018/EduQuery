@@ -36,7 +36,6 @@ packaging==26.0
 pillow==12.1.1
 pyclipper==1.4.0
 Pygments==2.19.2
-PyMuPDF==1.27.2
 pypdf==6.9.1
 python-bidi==0.6.7
 python-dotenv==1.2.2

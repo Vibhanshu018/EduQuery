@@ -1338,9 +1338,10 @@ def server_error(e):
 
 # ── ENTRYPOINT ────────────────────────────────────────────────────────────────
 
+# This runs on startup regardless of how the app is launched (gunicorn or direct)
+with app.app_context():
+    db.create_all()
+
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-    if __name__ == "__main__":
-     port = int(os.environ.get("PORT", 8000))
+    port = int(os.environ.get("PORT", 8000))
     app.run("0.0.0.0", port=port, debug=False)

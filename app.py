@@ -964,18 +964,7 @@ def history():
     return render_template("history.html", docs=docs, messages=messages, example_name=ex_name, active="history")
 
 
-@app.route("/use_example", methods=["GET", "POST"])
-def use_example():
-    if not EXAMPLE_PATH:
-        return jsonify({"error": "No example file configured"}), 404
-    ex = Path(EXAMPLE_PATH)
-    if not ex.exists():
-        return jsonify({"error": "Example file not found", "path": str(EXAMPLE_PATH)}), 404
-    dest = UPLOAD_DIR / ex.name
-    if not dest.exists():
-        import shutil
-        shutil.copy(ex, dest)
-    return redirect(url_for("process_file", filename=dest.name))
+
 
 
 @app.route("/uploads/<path:filename>")

@@ -1,168 +1,157 @@
 {% extends "base.html" %}
 {% block title %}Important Questions · RAG Study Buddy{% endblock %}
 
+{% block head_extra %}
+<style>
+.q-important {
+    padding: 1.1rem 1.3rem;
+    border-radius: 13px;
+    border: 1px solid var(--border);
+    background: rgba(15,23,42,0.88);
+    margin-bottom: 0.8rem;
+    transition: border-color 0.18s;
+    counter-increment: imp;
+}
+.q-important:hover { border-color: rgba(250,204,21,0.35); }
+.q-imp-text { font-size:0.95rem; font-weight:500; line-height:1.55; margin-bottom:0.4rem; }
+.q-imp-reason {
+    font-size:0.8rem; color:var(--text-muted);
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    background: rgba(250,204,21,0.07);
+    border-left: 2px solid rgba(250,204,21,0.4);
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="card">
-    <span class="pill">QUESTION PAPERS · IMPORTANT Qs</span>
 
-    <h1 style="margin-top:0.8rem; font-size:1.7rem;">
-        Upload multiple question papers & shortlist important questions
-    </h1>
-
-    <p class="muted" style="margin-top:0.4rem; max-width:680px;">
-        Yahan par aap multiple past papers / PDFs / images upload kar sakte ho. 
-        AI in sab ka analysis karke sabse important, high-weightage questions shortlist karega.
+<div class="card" style="margin-bottom:1.4rem;">
+    <div class="pill">IMPORTANT QUESTIONS</div>
+    <h1 class="page-title">Shortlist high-yield questions from past papers</h1>
+    <p class="page-sub" style="margin-top:0.4rem;">
+        Upload multiple question papers — AI analyses all of them and picks the most repeated, high-weightage questions.
     </p>
 
-    <form id="importantForm" enctype="multipart/form-data" style="margin-top:1.2rem;">
-        <div style="display:flex; flex-direction:column; gap:0.9rem;">
+    <form id="importantForm" enctype="multipart/form-data" style="margin-top:1.4rem;">
 
-            <div>
-                <label for="papers">Upload question papers (multiple allowed)</label>
-                <input id="papers" name="papers" type="file" multiple
-                       accept=".pdf,.txt,.md,.png,.jpg,.jpeg,.tiff,.bmp" />
-                <div class="muted" style="margin-top:0.25rem;">
-                    Supported: PDF, images (jpg, png, etc.), txt, md.  
-                    Tip: select 3–5 papers ek saath.
-                </div>
-            </div>
-
-            <div class="input-row">
-                <div>
-                    <label for="num_questions">How many important questions?</label>
-                    <input id="num_questions" name="num_questions" type="number" min="5" max="100" value="20" />
-                </div>
-                <div>
-                    <label for="imp_language">Output language</label>
-                    <select id="imp_language" name="language">
-                        <option value="English">English</option>
-                        <option value="Hinglish">Hinglish</option>
-                        <option value="Hindi">Hindi</option>
-                    </select>
-                </div>
-            </div>
-
-            <div style="display:flex; gap:0.8rem; flex-wrap:wrap; margin-top:0.4rem;">
-                <button type="submit" class="btn-primary">
-                    Generate important questions
-                </button>
-                <a href="{{ url_for('index') }}" class="btn-secondary">
-                    Back to Home
-                </a>
-            </div>
-
-            <div id="impError" class="error" style="display:none;"></div>
+        <div style="margin-bottom:1rem;">
+            <label>Upload question papers <span class="muted" style="font-size:0.75rem;">(select multiple)</span></label>
+            <input id="papers" name="papers" type="file" multiple accept=".pdf,.txt,.md,.png,.jpg,.jpeg,.tiff,.bmp" />
+            <div class="muted" style="margin-top:0.3rem;">Supported: PDF, images, TXT, MD &nbsp;·&nbsp; Tip: select 3–5 papers at once</div>
         </div>
+
+        <div class="input-row" style="margin-bottom:1rem;">
+            <div>
+                <label>Number of important questions</label>
+                <input id="num_questions" name="num_questions" type="number" min="5" max="100" value="20" />
+            </div>
+            <div>
+                <label>Output language</label>
+                <select id="imp_language" name="language">
+                    <option value="English">English</option>
+                    <option value="Hindi">Hindi</option>
+                    <option value="Hinglish">Hinglish</option>
+                    <option value="Spanish">Spanish</option>
+                    <option value="French">French</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:0.8rem; flex-wrap:wrap;">
+            <button type="submit" class="btn-primary" id="impBtn">⭐ Generate important questions</button>
+            <a href="{{ url_for('landing') }}" class="btn-secondary">← Back</a>
+        </div>
+
+        <div id="impError" class="error-msg" style="display:none; margin-top:0.6rem;"></div>
     </form>
 </div>
 
-<div class="card" style="margin-top:1.6rem;">
-    <div class="badge">RESULT · SHORTLISTED QUESTIONS</div>
-
-    <h2 style="margin-top:0.8rem; font-size:1.4rem;">
-        AI-shortlisted high-yield questions
-    </h2>
-    <p class="muted" style="margin-top:0.3rem; max-width:680px;">
-        Neeche AI ne sab uploaded papers se sabse important questions pick kiye hain.  
-        Har question ke saath chhota sa “why important” reason bhi diya jayega.
+<!-- RESULTS -->
+<div class="card">
+    <div class="badge">⭐ SHORTLISTED QUESTIONS</div>
+    <h2 class="page-title" style="font-size:1.15rem; margin-top:0.7rem;">AI-shortlisted high-yield questions</h2>
+    <p class="muted" style="margin-top:0.3rem; margin-bottom:1rem;">
+        AI picks the most important, frequently-repeated questions from all uploaded papers — with a brief reason for each.
     </p>
 
-    <div id="impLoading" class="muted" style="margin-top:0.8rem; display:none;">
-        Processing papers... thoda time lag sakta hai large PDFs ke liye ⚙️
+    <div id="impLoading" class="muted" style="display:none; padding:1rem 0;">
+        <div class="dot-pulse" style="display:inline-flex; gap:4px; vertical-align:middle; margin-right:0.5rem;">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--text-muted);animation:dotPulse 1.2s ease-in-out infinite;"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--text-muted);animation:dotPulse 1.2s ease-in-out infinite 0.2s;"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--text-muted);animation:dotPulse 1.2s ease-in-out infinite 0.4s;"></span>
+        </div>
+        Processing papers… this may take a moment for large PDFs.
     </div>
 
-    <div id="impResults" style="margin-top:1rem;">
-        <p class="muted">
-            Abhi tak koi result nahi. Pehle upar se papers upload karke "Generate" dabao.
-        </p>
+    <div id="impResults">
+        <p class="muted">No results yet. Upload papers above and click Generate.</p>
     </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-(function () {
-    const form      = document.getElementById("importantForm");
-    const errorBox  = document.getElementById("impError");
-    const loadingEl = document.getElementById("impLoading");
-    const resultsEl = document.getElementById("impResults");
+(function(){
+    const form    = document.getElementById('importantForm');
+    const errBox  = document.getElementById('impError');
+    const loading = document.getElementById('impLoading');
+    const results = document.getElementById('impResults');
+    const btn     = document.getElementById('impBtn');
 
-    function renderResults(data) {
-        if (!data || data.status !== "ok") {
-            resultsEl.innerHTML = "<p class='error'>Could not parse server response.</p>";
+    function render(data){
+        if(!data || data.status !== 'ok'){
+            results.innerHTML = "<p class='error-msg'>Could not parse server response.</p>";
             return;
         }
-
         const qs = data.important_questions;
-        if (!qs || (Array.isArray(qs) && qs.length === 0)) {
-            resultsEl.innerHTML = "<p class='muted'>No important questions returned.</p>";
+        if(!qs || (Array.isArray(qs) && qs.length === 0)){
+            results.innerHTML = "<p class='muted'>No questions returned.</p>";
             return;
         }
-
-        // If backend returned raw string
-        if (!Array.isArray(qs)) {
-            resultsEl.innerHTML = "<pre style='white-space:pre-wrap; font-size:0.9rem;'>" +
-                                  (qs.raw || JSON.stringify(qs, null, 2)) +
-                                  "</pre>";
+        if(!Array.isArray(qs)){
+            results.innerHTML = `<pre style="white-space:pre-wrap;font-size:0.85rem;">${qs.raw || JSON.stringify(qs,null,2)}</pre>`;
             return;
         }
-
-        let html = "<ol style='margin-top:0.6rem; padding-left:1.3rem; font-size:0.95rem;'>";
-        qs.forEach((item) => {
-            html += "<li style='margin-bottom:1rem;'>";
-            html += "<div style='font-weight:600; margin-bottom:0.3rem;'>" +
-                    (item.question || "(no question)") +
-                    "</div>";
-            if (item.reason) {
-                html += "<div class='muted' style='font-size:0.85rem;'>" +
-                        "Why important: " + item.reason +
-                        "</div>";
-            }
-            html += "</li>";
-        });
-        html += "</ol>";
-
-        resultsEl.innerHTML = html;
+        results.innerHTML = qs.map((item, i) => `
+            <div class="q-important">
+                <div class="muted" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.35rem;">Question ${i+1}</div>
+                <div class="q-imp-text">${item.question || '(no question)'}</div>
+                ${item.reason ? `<div class="q-imp-reason">Why important: ${item.reason}</div>` : ''}
+            </div>
+        `).join('');
     }
 
-    form.addEventListener("submit", async function (e) {
+    form.addEventListener('submit', async function(e){
         e.preventDefault();
-        errorBox.style.display = "none";
-        loadingEl.style.display = "block";
-        resultsEl.innerHTML = "";
-
-        const files = document.getElementById("papers").files;
-        if (!files || files.length === 0) {
-            loadingEl.style.display = "none";
-            errorBox.textContent = "Please upload at least one question paper.";
-            errorBox.style.display = "block";
-            return;
+        errBox.style.display = 'none';
+        const files = document.getElementById('papers').files;
+        if(!files || files.length === 0){
+            errBox.textContent = 'Please upload at least one question paper.';
+            errBox.style.display = 'block'; return;
         }
+        loading.style.display = 'block';
+        results.innerHTML = '';
+        btn.disabled = true;
 
         const fd = new FormData();
-        for (let i = 0; i < files.length; i++) {
-            fd.append("papers", files[i]);
-        }
-        fd.append("num_questions", document.getElementById("num_questions").value || "20");
-        fd.append("language", document.getElementById("imp_language").value || "English");
+        for(let i=0;i<files.length;i++) fd.append('papers', files[i]);
+        fd.append('num_questions', document.getElementById('num_questions').value || '20');
+        fd.append('language', document.getElementById('imp_language').value || 'English');
 
         try {
-            const res  = await fetch("{{ url_for('important_questions') }}", {
-                method: "POST",
-                body: fd,
-            });
+            const res  = await fetch("{{ url_for('important_questions') }}", { method:'POST', body:fd });
             const data = await res.json();
-            loadingEl.style.display = "none";
-
-            if (!res.ok || data.status !== "ok") {
-                throw new Error(data.error || "Server error");
-            }
-
-            renderResults(data);
-        } catch (err) {
-            loadingEl.style.display = "none";
-            errorBox.textContent = err.message;
-            errorBox.style.display = "block";
+            loading.style.display = 'none';
+            if(!res.ok || data.status !== 'ok') throw new Error(data.error || 'Server error');
+            render(data);
+        } catch(err){
+            loading.style.display = 'none';
+            errBox.textContent = err.message;
+            errBox.style.display = 'block';
+        } finally {
+            btn.disabled = false;
         }
     });
 })();

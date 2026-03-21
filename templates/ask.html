@@ -3,52 +3,49 @@
 
 {% block content %}
 <div class="card">
-    <span class="pill">STEP 1 · SET QUESTION STYLE</span>
-    <h1 style="margin-top:0.8rem; font-size:1.6rem;">Generate questions from your document</h1>
-    <p class="muted" style="margin-top:0.4rem; max-width:650px;">
-        Choose type (MCQ / short / long), number of questions, and whether to include answers.
-        Then AI will read your uploaded file and create exam-style questions.
+    <div class="pill">STEP 1 · CONFIGURE QUESTIONS</div>
+    <h1 class="page-title">Generate questions from your document</h1>
+    <p class="page-sub" style="margin-top:0.4rem;">
+        Choose question type, count, and language. AI will read your uploaded file and produce exam-ready questions.
     </p>
 
-    <form action="{{ url_for('process_file', filename=filename) }}" method="post" style="margin-top:1rem;">
-        <div class="input-row">
+    <form action="{{ url_for('process_file', filename=filename) }}" method="post" style="margin-top:1.4rem;">
+
+        <div class="input-row" style="margin-bottom:1rem;">
             <div>
                 <label>Question type</label>
                 <select name="mode">
                     <option value="mcq">MCQ (A–D options)</option>
                     <option value="short">Short answer</option>
-                    <option value="long">Long answer</option>
+                    <option value="long">Long answer (detailed)</option>
                 </select>
             </div>
             <div>
                 <label>Number of questions</label>
-                <input type="number" name="num_questions" value="4" min="1" max="25" />
+                <input type="number" name="num_questions" value="5" min="1" max="25" />
             </div>
         </div>
 
-        <div style="margin-top:0.8rem; display:flex; flex-wrap:wrap; gap:1rem; align-items:center;">
-            <label style="display:flex; gap:0.45rem; align-items:center; cursor:pointer;">
-                <input type="checkbox" name="include_answers" checked style="width:auto; margin-top:0;">
-                <span class="muted">Include answers</span>
+        <div style="display:flex; flex-wrap:wrap; gap:1.2rem; align-items:center; margin-bottom:1.2rem;">
+            <label style="display:flex; gap:0.45rem; align-items:center; cursor:pointer; color:var(--text-main); font-size:0.88rem;">
+                <input type="checkbox" name="include_answers" checked style="width:auto; margin:0; accent-color: var(--primary);" />
+                Include answer keys
             </label>
-
             <div>
-                <label>Language</label>
+                <label>Output language</label>
                 <select name="language">
                     <option value="English">English</option>
-                    <option value="Hinglish">Hinglish</option>
                     <option value="Hindi">Hindi</option>
+                    <option value="Hinglish">Hinglish</option>
+                    <option value="Spanish">Spanish</option>
+                    <option value="French">French</option>
                 </select>
             </div>
         </div>
 
-        <div style="margin-top:1.2rem; display:flex; gap:0.9rem; flex-wrap:wrap;">
-            <button type="submit" class="btn-primary">
-                Generate questions
-            </button>
-            <a href="{{ url_for('index') }}" class="btn-secondary">
-                Back to Home
-            </a>
+        <div style="display:flex; gap:0.8rem; flex-wrap:wrap;">
+            <button type="submit" class="btn-primary">Generate questions</button>
+            <a href="{{ url_for('landing') }}" class="btn-secondary">← Back to Home</a>
         </div>
     </form>
 </div>

@@ -1,6 +1,0 @@
-{
-  "python.defaultInterpreterPath": "D:/rag_project/venv/Scripts/python.exe",
-  "python.analysis.extraPaths": [
-    "D:/rag_project/venv/Lib/site-packages"
-  ]
-}

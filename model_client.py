@@ -22,9 +22,9 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# -----------------------
+
 # CONFIG
-# -----------------------
+
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 if not MISTRAL_API_KEY:
     raise ValueError("❌ MISTRAL_API_KEY not found in .env file!")
@@ -44,9 +44,9 @@ def _get_session() -> requests.Session:
     return _session
 
 
-# -----------------------
+
 # CHAT COMPLETION (MISTRAL)
-# -----------------------
+
 def chat(prompt: str, max_tokens: int = 512, temperature: float = 0.2, timeout: int = 120) -> str:
     """
     Send prompt to Mistral Chat Completion API and return the response text.
@@ -93,9 +93,9 @@ def chat(prompt: str, max_tokens: int = 512, temperature: float = 0.2, timeout: 
     raise RuntimeError(f"Mistral request failed after retries: {last_exc}")
 
 
-# -----------------------
+
 # EMBEDDINGS (SentenceTransformers)
-# -----------------------
+
 _SBERT = None
 
 
@@ -159,9 +159,9 @@ def embed_query(text: str) -> List[float]:
     return embs[0] if embs else []
 
 
-# -----------------------
+
 # TEST
-# -----------------------
+
 if __name__ == "__main__":
     print("Testing Mistral chat...")
     print(chat("Hello! Explain RAG in simple words."))

@@ -1,12 +1,39 @@
-.venv/
-.venv
+# Virtual environments
 venv/
+.venv/
+env/
+
+# Python cache
 __pycache__/
+*.pyc
+*.pyo
+
+# Environment variables (API keys — NEVER push)
+.env
+
+# Database
+*.db
+*.sqlite3
+instance/
+
+# Uploads folder
 uploads/
-*.dll
-*.pyd
-*.lib
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large files
+*.pdf
 *.bin
 *.pt
 *.onnx
-*.pickle
+
+# Junk
+main
+where
+settings.json

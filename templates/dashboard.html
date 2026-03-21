@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · RAG Study Buddy{% endblock %}
+
+{% block head_extra %}
+<style>
+.feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 1rem; margin-top: 1.4rem; }
+.feature-tile {
+    padding: 1.5rem; border-radius: 16px;
+    border: 1px solid var(--border);
+    background: linear-gradient(135deg, rgba(15,23,42,0.95), rgba(2,6,23,0.98));
+    transition: border-color 0.2s, transform 0.18s, box-shadow 0.2s;
+    cursor: default;
+}
+.feature-tile:hover { border-color: rgba(37,99,235,0.4); transform: translateY(-2px); box-shadow: 0 14px 40px rgba(0,0,0,0.5); }
+.tile-icon { font-size: 1.5rem; margin-bottom: 0.7rem; }
+.tile-title { font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700; margin-bottom: 0.3rem; }
+.tile-desc  { font-size: 0.82rem; color: var(--text-muted); line-height: 1.55; }
+.upload-zone {
+    border: 2px dashed rgba(37,99,235,0.35);
+    border-radius: 14px; padding: 1.6rem;
+    text-align: center; cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    margin-top: 1rem;
+}
+.upload-zone:hover, .upload-zone.drag { border-color: rgba(37,99,235,0.7); background: rgba(37,99,235,0.06); }
+.upload-zone input[type="file"] { display: none; }
+.upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- HERO CARD -->
+<div class="card" style="margin-bottom: 1.4rem;">
+    <div class="pill">WELCOME · DASHBOARD</div>
+    <h1 class="page-title">Your AI-powered study partner</h1>
+    <p class="page-sub">Upload PDFs, paste YouTube links, or drop past papers. Get instant questions, explanations, and answers — in English, Hindi or Hinglish.</p>
+    <div style="display:flex; flex-wrap:wrap; gap:0.8rem; margin-top:1.3rem;">
+        <a href="{{ url_for('study_page') }}" class="btn-primary">▶ YouTube &amp; Notes</a>
+        <a href="{{ url_for('history') }}"    class="btn-secondary">📋 My History</a>
+        <a href="{{ url_for('auth_page') }}"  class="btn-secondary">🔐 Login / Sign up</a>
+    </div>
+</div>
+
+<div style="display:grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1fr); gap: 1.2rem; margin-bottom: 1.4rem;">
+
+    <!-- UPLOAD CARD -->
+    <div class="card">
+        <div class="pill">DOCUMENT → QUESTIONS</div>
+        <h2 class="page-title" style="font-size:1.25rem;">Upload a document</h2>
+        <p class="muted" style="margin-top:0.3rem;">PDF, image, or text file — AI will create MCQs, short &amp; long questions, then you can chat with it.</p>
+
+        <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" id="uploadForm">
+            <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">📄</div>
+                <div style="font-size:0.9rem; font-weight:500; margin-bottom:0.3rem;">Click to select a file</div>
+                <div class="muted">PDF · PNG · JPG · TXT · MD</div>
+                <div id="fileName" class="muted" style="margin-top:0.5rem; color: var(--accent);"></div>
+                <input type="file" name="file" id="fileInput" required accept=".pdf,.txt,.md,.png,.jpg,.jpeg,.tiff,.bmp" onchange="showFileName(this)" />
+            </div>
+
+            <div style="display:flex; flex-wrap:wrap; gap:0.7rem; margin-top:1rem;">
+                <button type="submit" class="btn-primary">Upload &amp; Generate Questions</button>
+                {% if example_name %}
+                <a href="{{ url_for('use_example') }}" class="btn-secondary">Try example ({{ example_name }})</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- QUICK LINKS -->
+    <div class="card">
+        <div class="pill">QUICK ACTIONS</div>
+        <div style="display:flex; flex-direction:column; gap:0.75rem; margin-top:1rem;">
+            <a href="{{ url_for('study_page') }}" class="btn-secondary" style="justify-content:flex-start;">🎥 &nbsp; YouTube &amp; Notes Explainer</a>
+            <a href="{{ url_for('important_questions_page') }}" class="btn-secondary" style="justify-content:flex-start;">⭐ &nbsp; Important Questions</a>
+            <a href="{{ url_for('history') }}" class="btn-secondary" style="justify-content:flex-start;">📚 &nbsp; Session History</a>
+            <a href="{{ url_for('auth_page') }}" class="btn-secondary" style="justify-content:flex-start;">🔐 &nbsp; Login / Create Account</a>
+        </div>
+    </div>
+</div>
+
+<!-- FEATURE TILES -->
+<div class="card">
+    <div class="pill">WHAT YOU CAN DO</div>
+    <div class="feature-grid">
+        <div class="feature-tile">
+            <div class="tile-icon">📄</div>
+            <div class="tile-title">Document Q&amp;A</div>
+            <div class="tile-desc">Upload any PDF or image and ask questions. AI answers using only your document's content.</div>
+        </div>
+        <div class="feature-tile">
+            <div class="tile-icon">🎥</div>
+            <div class="tile-title">YouTube Analysis</div>
+            <div class="tile-desc">Paste a YouTube link and get structured explanations, key concepts, and exam questions.</div>
+        </div>
+        <div class="feature-tile">
+            <div class="tile-icon">🧠</div>
+            <div class="tile-title">Question Generation</div>
+            <div class="tile-desc">Auto-generate MCQs, short-answer, or long-answer questions with optional answer keys.</div>
+        </div>
+        <div class="feature-tile">
+            <div class="tile-icon">⭐</div>
+            <div class="tile-title">Important Questions</div>
+            <div class="tile-desc">Upload multiple past papers — AI shortlists the highest-yield repeated questions.</div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showFileName(input){
+    const label = document.getElementById('fileName');
+    label.textContent = input.files[0] ? '✓ ' + input.files[0].name : '';
+}
+const zone = document.getElementById('uploadZone');
+['dragover','dragenter'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev => zone.addEventListener(ev, e => { zone.classList.remove('drag'); }));
+zone.addEventListener('drop', e => {
+    e.preventDefault();
+    const dt = e.dataTransfer;
+    if(dt && dt.files.length){
+        document.getElementById('fileInput').files = dt.files;
+        showFileName(document.getElementById('fileInput'));
+    }
+});
+</script>
+{% endblock %}

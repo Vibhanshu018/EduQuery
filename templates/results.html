@@ -1,101 +1,127 @@
 {% extends "base.html" %}
-{% block title %}Generated Questions{% endblock %}
+{% block title %}Generated Questions · RAG Study Buddy{% endblock %}
+
+{% block head_extra %}
+<style>
+.q-list { margin-top: 1.2rem; display: flex; flex-direction: column; gap: 1.2rem; }
+.q-item {
+    padding: 1.2rem 1.4rem;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: rgba(15,23,42,0.85);
+    counter-increment: q-counter;
+    position: relative;
+}
+.q-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.7rem; font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 0.4rem;
+}
+.q-text { font-size: 0.97rem; font-weight: 500; line-height: 1.55; margin-bottom: 0.6rem; }
+.choices { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.6rem; }
+.choice {
+    display: flex; align-items: baseline; gap: 0.5rem;
+    padding: 0.4rem 0.7rem; border-radius: 8px;
+    font-size: 0.88rem; color: var(--text-muted);
+    border: 1px solid transparent;
+    transition: border-color 0.15s, background 0.15s;
+}
+.choice:hover { border-color: var(--border); background: rgba(37,99,235,0.07); }
+.choice-key { font-weight: 600; color: #60a5fa; min-width: 1.2rem; }
+.answer-reveal {
+    margin-top: 0.5rem; padding: 0.5rem 0.8rem;
+    border-radius: 8px;
+    background: rgba(250,204,21,0.08);
+    border: 1px solid rgba(250,204,21,0.25);
+    font-size: 0.88rem; color: var(--accent);
+}
+.answer-reveal strong { color: var(--accent); }
+</style>
+{% endblock %}
 
 {% block content %}
 
-<div class="card">
-    <span class="pill">DOCUMENT · GENERATED QUESTIONS</span>
+<div class="card" style="margin-bottom:1.4rem;">
+    <div class="pill">GENERATED QUESTIONS</div>
+    <h1 class="page-title">Questions from your document</h1>
+    <p class="muted" style="margin-top:0.4rem;">Language: {{ language }} &nbsp;·&nbsp; File: {{ filename }}</p>
+</div>
 
-    <h1 style="margin-top:0.8rem; font-size:1.8rem;">
-        Questions generated from your document
-    </h1>
-
-    <p class="muted" style="margin-top:0.4rem; max-width:650px;">
-        Neeche AI ne document se questions banaye hain. Language: {{ language }}.
-    </p>
+<div class="card" style="margin-bottom:1.4rem;">
 
     {% if questions is mapping and questions.raw %}
-        <p class="error">Model ne valid JSON nahi diya. Raw output:</p>
-        <pre style="white-space:pre-wrap; font-size:0.9rem;">{{ questions.raw }}</pre>
+        <div class="flash flash-error">Model did not return valid JSON. Raw output:</div>
+        <pre style="white-space:pre-wrap; font-size:0.85rem; margin-top:0.8rem; padding:1rem; background:rgba(2,6,23,0.9); border-radius:10px; border:1px solid var(--border); overflow-x:auto;">{{ questions.raw }}</pre>
 
-    {% else %}
-        {% if questions is mapping %}
-            <div class="qa-block" style="margin-top:1rem; background:#0d1b2a; padding:1rem; border-radius:10px;">
-                <h3 style="color:#facc15; margin-bottom:0.5rem;">Question</h3>
-                <p style="white-space:pre-wrap;">{{ questions.question }}</p>
-
+    {% elif questions is mapping %}
+        <div class="q-list">
+            <div class="q-item">
+                <div class="q-num">Question</div>
+                <div class="q-text">{{ questions.question }}</div>
                 {% if questions.answer %}
-                <h3 style="color:#38bdf8; margin-top:1rem;">Answer</h3>
-                <p style="white-space:pre-wrap;">{{ questions.answer }}</p>
+                <div class="answer-reveal"><strong>Answer:</strong> {{ questions.answer }}</div>
                 {% endif %}
             </div>
-        {% else %}
-            <ol style="margin-top:1.2rem; padding-left:1.3rem; font-size:1rem;">
-                {% for q in questions %}
-                    <li style="margin-bottom:1.4rem;">
-                        <div style="font-weight:600; margin-bottom:0.4rem; font-size:1.05rem;">
-                            {{ q.question }}
-                        </div>
+        </div>
 
-                        {% if q.choices %}
-                            <ul style="list-style:none; padding-left:0.6rem; margin:0.3rem 0;" class="muted">
-                                {% for key, val in q.choices.items() %}
-                                    <li><strong>{{ key }}.</strong> {{ val }}</li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
+    {% else %}
+        <div class="q-list">
+            {% for q in questions %}
+            <div class="q-item">
+                <div class="q-num">Question {{ loop.index }}</div>
+                <div class="q-text">{{ q.question }}</div>
 
-                        {% if q.answer %}
-                            <div style="margin-top:0.4rem; font-size:0.9rem; color:#facc15;">
-                                <strong>Answer:</strong> {{ q.answer }}
-                            </div>
-                        {% endif %}
-                    </li>
-                {% endfor %}
-            </ol>
-        {% endif %}
+                {% if q.choices %}
+                <div class="choices">
+                    {% for key, val in q.choices.items() %}
+                    <div class="choice">
+                        <span class="choice-key">{{ key }}.</span>
+                        <span>{{ val }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if q.answer %}
+                <div class="answer-reveal"><strong>Answer:</strong> {{ q.answer }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
     {% endif %}
 
-    <div style="margin-top:1.5rem; display:flex; gap:0.8rem; flex-wrap:wrap;">
-        <a href="{{ url_for('process_file', filename=filename) }}" class="btn-secondary">
-            Generate again from same file
-        </a>
-        <a href="{{ url_for('index') }}" class="btn-primary">
-            Back to Home
-        </a>
+    <div style="display:flex; gap:0.8rem; flex-wrap:wrap; margin-top:1.5rem;">
+        <a href="{{ url_for('process_file', filename=filename) }}" class="btn-secondary">↩ Generate again</a>
+        <a href="{{ url_for('landing') }}" class="btn-primary">🏠 Home</a>
     </div>
 </div>
 
-<div class="card" style="margin-top:1.8rem;">
-    <div class="badge">STEP 2 · DOUBT SOLVING</div>
-
-    <h2 style="margin-top:0.8rem; font-size:1.5rem;">
-        Chat with AI about these questions / this document
-    </h2>
-    <p class="muted" style="margin-top:0.4rem; max-width:650px;">
-        Ask: “Explain Q1 in simple words”, “give 5 more MCQs from this topic”,
-        “summarize whole chapter”, “gate level depth me samjhao”, etc.
+<!-- CHAT PANEL -->
+<div class="card">
+    <div class="badge">STEP 2 · DOUBT CHAT</div>
+    <h2 class="page-title" style="font-size:1.2rem; margin-top:0.7rem;">Ask anything about this document</h2>
+    <p class="muted" style="margin-top:0.3rem; margin-bottom:1rem;">
+        "Explain Q2 in simple words", "give 3 more MCQs on this topic", "summarize the chapter", etc.
     </p>
 
-    <div class="chat-box" style="margin-top:1rem;">
-        <div id="docChatMessages" class="chat-messages"></div>
+    <div class="chat-box">
+        <div class="chat-messages" id="chatMsgs"></div>
 
-        <form id="docChatForm" class="chat-input-row">
-            <textarea id="docChatInput" name="question"
-                      placeholder="Ask anything about these questions or the document..."
-                      required></textarea>
+        <div id="chatError" class="error-msg" style="display:none;"></div>
 
-            <div style="display:flex; flex-direction:column; gap:0.4rem;">
-                <select id="docChatLanguage" name="language" style="width:150px;">
-                    <option value="English" {% if language == 'English' %}selected{% endif %}>English</option>
+        <form id="chatForm" class="chat-input-row">
+            <textarea id="chatInput" placeholder="Ask anything about the document..." rows="2"></textarea>
+            <div style="display:flex; flex-direction:column; gap:0.5rem; align-items:stretch;">
+                <select id="chatLang">
+                    <option value="English"  {% if language == 'English'  %}selected{% endif %}>English</option>
+                    <option value="Hindi"    {% if language == 'Hindi'    %}selected{% endif %}>Hindi</option>
                     <option value="Hinglish" {% if language == 'Hinglish' %}selected{% endif %}>Hinglish</option>
-                    <option value="Hindi" {% if language == 'Hindi' %}selected{% endif %}>Hindi</option>
                 </select>
-                <button type="submit" class="btn-primary">Send</button>
+                <button type="submit" class="btn-primary" style="white-space:nowrap;">Send</button>
             </div>
         </form>
-
-        <div id="docChatError" class="error" style="display:none;"></div>
     </div>
 </div>
 
@@ -103,64 +129,56 @@
 
 {% block scripts %}
 <script>
-(function () {
-    const form = document.getElementById("docChatForm");
-    const input = document.getElementById("docChatInput");
-    const langSel = document.getElementById("docChatLanguage");
-    const msgs = document.getElementById("docChatMessages");
-    const errBox = document.getElementById("docChatError");
+(function(){
+    const form   = document.getElementById('chatForm');
+    const input  = document.getElementById('chatInput');
+    const lang   = document.getElementById('chatLang');
+    const msgs   = document.getElementById('chatMsgs');
+    const errBox = document.getElementById('chatError');
 
-    function addMessage(text, who) {
-        const div = document.createElement("div");
-        div.classList.add("msg", who === "user" ? "msg-user" : "msg-bot");
-        div.textContent = text;
-        msgs.appendChild(div);
+    function addMsg(text, who){
+        const d = document.createElement('div');
+        d.className = 'msg msg-' + who;
+        d.textContent = text;
+        msgs.appendChild(d);
         msgs.scrollTop = msgs.scrollHeight;
+        return d;
+    }
+    function thinking(){
+        const d = document.createElement('div');
+        d.className = 'msg-thinking';
+        d.innerHTML = 'Thinking <div class="dot-pulse"><span></span><span></span><span></span></div>';
+        msgs.appendChild(d);
+        msgs.scrollTop = msgs.scrollHeight;
+        return d;
     }
 
-    form.addEventListener("submit", async function (e) {
+    // Ctrl+Enter to submit
+    input.addEventListener('keydown', e => { if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); form.requestSubmit(); } });
+
+    form.addEventListener('submit', async function(e){
         e.preventDefault();
-        errBox.style.display = "none";
-
-        const question = input.value.trim();
-        if (!question) return;
-
-        addMessage(question, "user");
-        input.value = "";
-
-        addMessage("Thinking...", "bot");
-        const loadingNode = msgs.lastChild;
-
+        errBox.style.display = 'none';
+        const q = input.value.trim();
+        if(!q) return;
+        addMsg(q, 'user');
+        input.value = '';
+        const loader = thinking();
         const fd = new FormData();
-        fd.append("question", question);
-        fd.append("language", langSel.value);
-
+        fd.append('question', q);
+        fd.append('language', lang.value);
         try {
-            const res = await fetch("{{ url_for('chat_file', filename=filename) }}", {
-                method: "POST",
-                body: fd
-            });
-
+            const res  = await fetch("{{ url_for('chat_file', filename=filename) }}", { method:'POST', body:fd });
             const data = await res.json();
-            msgs.removeChild(loadingNode);
-
-            if (!res.ok || data.status !== "ok") {
-                throw new Error(data.error || "Server error");
-            }
-
-            let ansText = "";
-            if (typeof data.answer === "string") {
-                ansText = data.answer;
-            } else if (data.answer && data.answer.raw) {
-                ansText = data.answer.raw;
-            } else {
-                ansText = JSON.stringify(data.answer);
-            }
-            addMessage(ansText, "bot");
-        } catch (err) {
-            msgs.removeChild(loadingNode);
+            loader.remove();
+            if(!res.ok || data.status !== 'ok') throw new Error(data.error || 'Server error');
+            const ans = typeof data.answer === 'string' ? data.answer
+                      : (data.answer?.raw || JSON.stringify(data.answer));
+            addMsg(ans, 'bot');
+        } catch(err){
+            loader.remove();
             errBox.textContent = err.message;
-            errBox.style.display = "block";
+            errBox.style.display = 'block';
         }
     });
 })();

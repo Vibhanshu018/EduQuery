@@ -1,47 +1,186 @@
 {% extends "base.html" %}
 {% block title %}YouTube & Notes · RAG Study Buddy{% endblock %}
 
+{% block head_extra %}
+<style>
+.ai-response {
+    background: rgba(15,23,42,0.9);
+    color: var(--text-main);
+    padding: 1.4rem; border-radius: 14px;
+    border: 1px solid var(--border);
+    line-height: 1.75; font-size: 0.92rem;
+}
+.ai-response h1,.ai-response h2,.ai-response h3 {
+    font-family: 'Syne', sans-serif; color: #38bdf8;
+    margin: 0.8rem 0 0.3rem;
+}
+.ai-response strong { color: var(--accent); }
+.ai-response pre {
+    background: rgba(2,6,23,0.95); padding: 0.9rem;
+    border-radius: 10px; overflow-x: auto;
+    border: 1px solid var(--border);
+}
+.ai-response code {
+    background: rgba(2,6,23,0.9); padding: 0.1rem 0.3rem;
+    border-radius: 4px; font-family: ui-monospace, monospace; font-size: 0.83rem;
+}
+.video-embed { border-radius: 12px; overflow: hidden; margin-bottom: 1rem; }
+.video-embed iframe { display: block; width: 100%; height: 320px; border: none; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="card">
-    <span class="pill">STEP 1 · YOUTUBE &amp; NOTES</span>
-    <h1 style="margin-top:0.8rem; font-size:1.7rem;">
-        Paste a YouTube link or notes to study a topic
-    </h1>
-    <p class="muted" style="margin-top:0.4rem; max-width:650px;">
-        App ko YouTube link do, optional notes add karo, language choose karo — phir AI
-        tumhe full explanation, key points, definitions aur example questions dega.
+
+<div class="card" style="margin-bottom:1.4rem;">
+    <div class="pill">YOUTUBE &amp; NOTES</div>
+    <h1 class="page-title">Paste a YouTube link or notes to study</h1>
+    <p class="page-sub" style="margin-top:0.4rem;">
+        Give the app a YouTube URL, optional notes, and a language — AI will explain the topic with examples and generate exam questions.
     </p>
 
-    <form action="{{ url_for('study_result_page') }}" method="post" style="margin-top:1.1rem;">
+    <form id="studyForm" style="margin-top:1.4rem;">
         <div style="margin-bottom:1rem;">
-            <label for="youtube_url">YouTube Link (optional but recommended)</label>
-            <input type="text" id="youtube_url" name="youtube_url"
-                   placeholder="https://www.youtube.com/watch?v=..." />
-            <p class="muted" style="margin-top:0.3rem;">
-                Even if transcript nahin milta, AI topic ko URL text + notes se samajh kar explain karega.
-            </p>
+            <label>YouTube Link <span class="muted" style="font-size:0.75rem;">(optional)</span></label>
+            <input type="text" name="youtube_url" id="ytUrl" placeholder="https://www.youtube.com/watch?v=..." />
         </div>
 
         <div style="margin-bottom:1rem;">
-            <label for="notes">Your notes / topic description (optional)</label>
-            <textarea id="notes" name="notes"
-                      placeholder="Koi topic ka naam, ya thoda summary likho – jaise 'Deadlock in OS', 'Quick sort algorithm' etc."></textarea>
+            <label>Notes / Topic <span class="muted" style="font-size:0.75rem;">(optional — describe what you want explained)</span></label>
+            <textarea name="notes" id="notes" placeholder="e.g. Explain deadlocks, or summarise this video, or explain quicksort with examples..."></textarea>
         </div>
 
-        <div style="display:flex; flex-wrap:wrap; gap:1rem; align-items:center;">
-            <div>
-                <label for="language">Output language</label>
-                <select id="language" name="language">
+        <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end;">
+            <div style="flex:0 0 160px;">
+                <label>Language</label>
+                <select name="language" id="studyLang">
                     <option value="English">English</option>
-                    <option value="Hinglish">Hinglish</option>
                     <option value="Hindi">Hindi</option>
+                    <option value="Hinglish">Hinglish</option>
+                    <option value="Spanish">Spanish</option>
+                    <option value="French">French</option>
                 </select>
             </div>
-
-            <button type="submit" class="btn-primary">
-                Generate explanation
-            </button>
+            <button type="submit" class="btn-primary" id="studyBtn" style="margin-top:1.3rem;">Generate explanation</button>
         </div>
+        <div id="studyError" class="error-msg" style="display:none; margin-top:0.6rem;"></div>
     </form>
 </div>
+
+<!-- RESULT -->
+<div id="resultSection" style="display:none;">
+    <div class="card" style="margin-bottom:1.4rem;">
+        <div id="videoContainer"></div>
+        <div class="badge" style="margin-bottom:0.8rem;">AI EXPLANATION</div>
+        <div id="answerBox" class="ai-response"></div>
+    </div>
+
+    <!-- FOLLOW-UP CHAT -->
+    <div class="card">
+        <div class="badge">FOLLOW-UP DOUBTS</div>
+        <h2 class="page-title" style="font-size:1.1rem; margin-top:0.6rem;">Ask more about this topic</h2>
+        <p class="muted" style="margin-bottom:1rem;">"Give 2 more examples", "explain in simpler terms", "make 5 MCQs", etc.</p>
+
+        <div class="chat-box">
+            <div class="chat-messages" id="followMsgs"></div>
+            <div id="followError" class="error-msg" style="display:none;"></div>
+            <form id="followForm" class="chat-input-row">
+                <textarea id="followInput" placeholder="Ask a follow-up..." rows="2"></textarea>
+                <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                    <select id="followLang">
+                        <option value="English">English</option>
+                        <option value="Hindi">Hindi</option>
+                        <option value="Hinglish">Hinglish</option>
+                    </select>
+                    <button type="submit" class="btn-primary">Send</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── MAIN FORM ─────────────────────────────────────────────────────────────────
+document.getElementById('studyForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const errBox = document.getElementById('studyError');
+    errBox.style.display = 'none';
+    const btn = document.getElementById('studyBtn');
+    btn.disabled = true; btn.textContent = 'Generating…';
+
+    const fd = new FormData(this);
+    try {
+        const res  = await fetch("{{ url_for('study_result_page') }}", { method:'POST', body:fd });
+        const data = await res.json();
+        if(!res.ok || data.status !== 'ok') throw new Error(data.error || 'Server error');
+
+        document.getElementById('resultSection').style.display = 'block';
+        document.getElementById('answerBox').innerHTML = data.answer || data.info || '';
+
+        const vid = data.video_id;
+        const vidBox = document.getElementById('videoContainer');
+        if(vid){
+            vidBox.innerHTML = `<div class="video-embed"><iframe src="https://www.youtube.com/embed/${vid}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+        } else { vidBox.innerHTML = ''; }
+
+        document.getElementById('resultSection').scrollIntoView({behavior:'smooth'});
+    } catch(err){
+        errBox.textContent = err.message;
+        errBox.style.display = 'block';
+    } finally {
+        btn.disabled = false; btn.textContent = 'Generate explanation';
+    }
+});
+
+// ── FOLLOW-UP CHAT ────────────────────────────────────────────────────────────
+(function(){
+    const form   = document.getElementById('followForm');
+    const input  = document.getElementById('followInput');
+    const lang   = document.getElementById('followLang');
+    const msgs   = document.getElementById('followMsgs');
+    const errBox = document.getElementById('followError');
+
+    function addMsg(text, who){
+        const d = document.createElement('div');
+        d.className = 'msg msg-' + who;
+        d.textContent = text;
+        msgs.appendChild(d);
+        msgs.scrollTop = msgs.scrollHeight;
+        return d;
+    }
+    function thinking(){
+        const d = document.createElement('div');
+        d.className = 'msg-thinking';
+        d.innerHTML = 'Thinking <div class="dot-pulse"><span></span><span></span><span></span></div>';
+        msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight; return d;
+    }
+
+    input.addEventListener('keydown', e => { if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); form.requestSubmit(); } });
+
+    form.addEventListener('submit', async function(e){
+        e.preventDefault();
+        errBox.style.display = 'none';
+        const msg = input.value.trim();
+        if(!msg) return;
+        addMsg(msg, 'user'); input.value = '';
+        const loader = thinking();
+        try {
+            const res  = await fetch("{{ url_for('study_chat') }}", {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ message: msg, language: lang.value })
+            });
+            const data = await res.json();
+            loader.remove();
+            if(!res.ok || data.status !== 'ok') throw new Error(data.error || 'Server error');
+            addMsg(data.answer || data.info || '[empty reply]', 'bot');
+        } catch(err){
+            loader.remove();
+            errBox.textContent = err.message; errBox.style.display = 'block';
+        }
+    });
+})();
+</script>
 {% endblock %}

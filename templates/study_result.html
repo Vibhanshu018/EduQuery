@@ -1,128 +1,83 @@
 {% extends "base.html" %}
-{% block title %}Study Result{% endblock %}
+{% block title %}Study Result · RAG Study Buddy{% endblock %}
 
 {% block head_extra %}
 <style>
-    .markdown-card {
-        background: radial-gradient(circle at top left,
-            rgba(37,99,235,0.25),
-            rgba(15,23,42,0.98));
-        border-radius: 18px;
-        border: 1px solid rgba(148,163,184,0.35);
-        padding: 1.8rem;
-        box-shadow: 0 25px 60px rgba(0,0,0,0.85);
-        margin-bottom: 1.6rem;
-    }
-    .markdown-card h1,
-    .markdown-card h2,
-    .markdown-card h3,
-    .markdown-card h4 {
-        margin-top: 1rem;
-        margin-bottom: 0.4rem;
-    }
-    .markdown-card ul {
-        padding-left: 1.2rem;
-    }
-    .markdown-card code {
-        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
-                     Consolas, "Liberation Mono", "Courier New", monospace;
-        font-size: 0.85rem;
-        background: rgba(15,23,42,0.9);
-        padding: 0.15rem 0.4rem;
-        border-radius: 999px;
-        border: 1px solid rgba(148,163,184,0.5);
-    }
-    .markdown-card pre {
-        background: #020617;
-        padding: 0.8rem 1rem;
-        border-radius: 0.9rem;
-        border: 1px solid rgba(148,163,184,0.4);
-        overflow-x: auto;
-        font-size: 0.85rem;
-    }
-    .section-label {
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #a5b4fc;
-        margin-bottom: 0.25rem;
-    }
-    .input-pill {
-        padding: 0.6rem 0.9rem;
-        border-radius: 0.9rem;
-        background: rgba(15,23,42,0.9);
-        border: 1px dashed rgba(148,163,184,0.6);
-        font-size: 0.85rem;
-        white-space: pre-wrap;
-        word-break: break-word;
-    }
+.input-pill {
+    padding: 0.7rem 1rem;
+    border-radius: 10px;
+    background: rgba(15,23,42,0.9);
+    border: 1px dashed rgba(148,163,184,0.3);
+    font-size: 0.88rem; white-space: pre-wrap; word-break: break-word;
+    color: var(--text-muted);
+}
+.ai-result-body {
+    background: rgba(15,23,42,0.85);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.4rem;
+    line-height: 1.75; font-size: 0.92rem;
+    margin-top: 0.8rem;
+}
+.ai-result-body h1,.ai-result-body h2,.ai-result-body h3 {
+    font-family:'Syne',sans-serif; color:#38bdf8;
+    margin:0.9rem 0 0.35rem;
+}
+.ai-result-body strong { color: var(--accent); }
+.ai-result-body ul,.ai-result-body ol { padding-left:1.3rem; margin:0.4rem 0; }
+.ai-result-body pre {
+    background:rgba(2,6,23,0.96); padding:0.9rem;
+    border-radius:10px; border:1px solid var(--border);
+    overflow-x:auto; font-size:0.83rem;
+}
+.ai-result-body code {
+    background:rgba(2,6,23,0.9); padding:0.1rem 0.3rem;
+    border-radius:4px; font-family:ui-monospace,monospace; font-size:0.83rem;
+    border:1px solid var(--border);
+}
 </style>
 {% endblock %}
 
 {% block content %}
 
-<div class="card" style="margin-bottom:1.6rem;">
-    <span class="pill">Study Result</span>
+<div class="card" style="margin-bottom:1.4rem;">
+    <div class="pill">STUDY RESULT</div>
+    <h1 class="page-title">AI Explanation</h1>
+    <p class="muted" style="margin-top:0.3rem;">Language: {{ language }}</p>
 
-    <h1 style="margin-top:0.8rem; font-size:1.9rem;">
-        Explained notes for your video / text
-    </h1>
-
-    <p class="muted" style="margin-top:0.35rem; max-width:680px;">
-        Neeche AI ne aapke YouTube link / notes ke basis par explanation banayi hai.
-        Language: {{ language }}.
-        Agar transcript available nahi hota hai, to topic ko URL + notes se infer karke
-        general explanation di jaati hai.
-    </p>
-
-    <div style="margin-top:1.1rem;">
-        <div class="section-label">Your Input</div>
-        <div class="input-pill">
-            {{ original_message }}
-        </div>
+    <div style="margin-top:1rem;">
+        <div class="muted" style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Your input</div>
+        <div class="input-pill">{{ original_message }}</div>
     </div>
 </div>
 
-<!-- AI EXPLANATION (markdown rendered as HTML in app.py) -->
-<div class="markdown-card">
-    <div class="section-label">AI Explanation</div>
-    <div class="markdown-body">
+<div class="card" style="margin-bottom:1.4rem;">
+    <div class="badge">AI EXPLANATION</div>
+    <div class="ai-result-body markdown-body">
         {{ first_answer_html | safe }}
     </div>
 </div>
 
-<!-- Optional: quick follow-up chat (uses /study_chat API) -->
+<!-- FOLLOW-UP CHAT -->
 <div class="card">
-    <div class="badge">STEP 2 · Follow-up Questions</div>
+    <div class="badge">FOLLOW-UP DOUBTS</div>
+    <h2 class="page-title" style="font-size:1.1rem; margin-top:0.7rem;">Ask more about this topic</h2>
+    <p class="muted" style="margin-bottom:1rem;">"Explain in simpler words", "give 2 more examples", "5 MCQs on this", etc.</p>
 
-    <h2 style="margin-top:0.8rem; font-size:1.5rem;">
-        Ask more doubts about this topic
-    </h2>
-    <p class="muted" style="margin-top:0.4rem; max-width:650px;">
-        Yahan se aap aur questions pooch sakte ho — “isko easy words mein samjhao”,
-        “2 aur examples do”, “interview questions batao”, etc.
-    </p>
-
-    <div class="chat-box" style="margin-top:1rem;">
-        <div id="studyFollowChatMessages" class="chat-messages"></div>
-
-        <form id="studyFollowChatForm" class="chat-input-row">
-            <textarea id="studyFollowChatInput"
-                      name="message"
-                      placeholder="Type your doubt about this topic..."
-                      required></textarea>
-
-            <div style="display:flex; flex-direction:column; gap:0.4rem;">
-                <select id="studyFollowChatLanguage" name="language" style="width:150px;">
-                    <option value="English" {% if language == 'English' %}selected{% endif %}>English</option>
-                    <option value="Hinglish" {% if language == 'Hinglish' %}selected{% endif %}>Hinglish</option>
-                    <option value="Hindi" {% if language == 'Hindi' %}selected{% endif %}>Hindi</option>
+    <div class="chat-box">
+        <div class="chat-messages" id="followMsgs"></div>
+        <div id="followError" class="error-msg" style="display:none;"></div>
+        <form id="followForm" class="chat-input-row">
+            <textarea id="followInput" placeholder="Type your doubt…" rows="2"></textarea>
+            <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                <select id="followLang">
+                    <option value="English"  {% if language=='English'  %}selected{% endif %}>English</option>
+                    <option value="Hindi"    {% if language=='Hindi'    %}selected{% endif %}>Hindi</option>
+                    <option value="Hinglish" {% if language=='Hinglish' %}selected{% endif %}>Hinglish</option>
                 </select>
                 <button type="submit" class="btn-primary">Send</button>
             </div>
         </form>
-
-        <div id="studyFollowChatError" class="error" style="display:none;"></div>
     </div>
 </div>
 
@@ -130,61 +85,48 @@
 
 {% block scripts %}
 <script>
-(function () {
-    const form   = document.getElementById("studyFollowChatForm");
-    const input  = document.getElementById("studyFollowChatInput");
-    const lang   = document.getElementById("studyFollowChatLanguage");
-    const msgs   = document.getElementById("studyFollowChatMessages");
-    const errBox = document.getElementById("studyFollowChatError");
+(function(){
+    const form   = document.getElementById('followForm');
+    const input  = document.getElementById('followInput');
+    const lang   = document.getElementById('followLang');
+    const msgs   = document.getElementById('followMsgs');
+    const errBox = document.getElementById('followError');
 
-    if (!form) return;
-
-    function addMsg(text, who) {
-        const div = document.createElement("div");
-        div.classList.add("msg", who === "user" ? "msg-user" : "msg-bot");
-        div.textContent = text;
-        msgs.appendChild(div);
-        msgs.scrollTop = msgs.scrollHeight;
+    function addMsg(text, who){
+        const d = document.createElement('div');
+        d.className = 'msg msg-' + who;
+        d.textContent = text;
+        msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight; return d;
+    }
+    function thinking(){
+        const d = document.createElement('div');
+        d.className = 'msg-thinking';
+        d.innerHTML = 'Thinking <div class="dot-pulse"><span></span><span></span><span></span></div>';
+        msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight; return d;
     }
 
-    form.addEventListener("submit", async function (e) {
+    input.addEventListener('keydown', e => { if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); form.requestSubmit(); } });
+
+    form.addEventListener('submit', async function(e){
         e.preventDefault();
-        errBox.style.display = "none";
-
-        const message = input.value.trim();
-        if (!message) return;
-
-        addMsg(message, "user");
-        input.value = "";
-
-        addMsg("Thinking...", "bot");
-        const loading = msgs.lastChild;
-
+        errBox.style.display = 'none';
+        const msg = input.value.trim();
+        if(!msg) return;
+        addMsg(msg, 'user'); input.value = '';
+        const loader = thinking();
         try {
-            const res = await fetch("{{ url_for('study_chat') }}", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    message: message,
-                    language: lang.value
-                })
+            const res  = await fetch("{{ url_for('study_chat') }}", {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ message: msg, language: lang.value })
             });
-
             const data = await res.json();
-            msgs.removeChild(loading);
-
-            if (!res.ok || data.status !== "ok") {
-                throw new Error(data.error || "Server error");
-            }
-
-            // /study_chat returns 'answer' for normal chat, or 'info' for youtube mode
-            const text = data.answer || data.info || "[empty reply]";
-            addMsg(text, "bot");
-
-        } catch (err) {
-            msgs.removeChild(loading);
-            errBox.textContent = err.message;
-            errBox.style.display = "block";
+            loader.remove();
+            if(!res.ok || data.status !== 'ok') throw new Error(data.error || 'Server error');
+            addMsg(data.answer || data.info || '[empty]', 'bot');
+        } catch(err){
+            loader.remove();
+            errBox.textContent = err.message; errBox.style.display = 'block';
         }
     });
 })();

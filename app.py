@@ -425,6 +425,31 @@ def build_instruction(mode: str, num_q: int, include_answers: bool) -> str:
             inst += " Include 'answer' field with comprehensive answers."
         return inst + ' Return JSON array: [{"question":"...","answer":"..."}].'
 
+def build_custom_question_prompt(
+    requirement: str,
+    q_types: list,
+    difficulty: str,
+    num_q: int,
+    language: str,
+    context: str = ""
+) -> str:
+    ctx_block = f"\n\nDocument context:\n{context}" if context else ""
+    return (
+        f"You are an expert question paper generator.\n"
+        f"Generate exactly {num_q} questions based on the user's requirement below.\n"
+        f"Question types to use: {', '.join(q_types)}\n"
+        f"Difficulty: {difficulty}\n"
+        f"Language: {language}\n"
+        f"Distribute questions intelligently across the requested types.\n"
+        f"{ctx_block}\n\n"
+        f"User requirement: {requirement}\n\n"
+        f"Return ONLY a JSON array, no backticks, no explanation:\n"
+        f'[{{"type":"MCQ"|"Short Answer"|"Long Answer"|"True/False",'
+        f'"difficulty":"Easy"|"Medium"|"Hard",'
+        f'"question":"...",'
+        f'"options":["A...","B...","C...","D..."],'  # only for MCQ
+        f'"answer":"..."}}]'
+    )
 
 # ── YOUTUBE HELPERS ───────────────────────────────────────────────────────────
 
@@ -507,6 +532,62 @@ Language: {language}
                 return {"raw": raw}
     return {"raw": raw}
 
+@app.route("/generate_custom_questions", methods=["POST"])
+def generate_custom_questions():
+    requirement = (request.form.get("requirement") or "").strip()
+    filename    = (request.form.get("filename") or "").strip()
+    q_types     = request.form.getlist("q_types") or ["MCQ", "Short Answer"]
+    difficulty  = (request.form.get("difficulty") or "Mixed").strip()
+    language    = (request.form.get("language") or "English").strip()
+    sid         = getattr(g, "session_id", None)
+
+    try:
+        num_q = max(1, min(int(request.form.get("num_questions", "5")), 20))
+    except ValueError:
+        num_q = 5
+
+    if not requirement:
+        return jsonify({"status": "error", "error": "requirement is required"}), 400
+
+    context = ""
+    if filename:
+        path = UPLOAD_DIR / filename
+        if not path.exists():
+            return jsonify({"status": "error", "error": "File not found"}), 404
+        chunks = build_chunks_for_file(str(path))
+        if chunks:
+            context = "\n\n---\n\n".join(chunks[:8])
+
+    prompt = build_custom_question_prompt(
+        requirement, q_types, difficulty, num_q, language, context
+    )
+
+    try:
+        raw = model_chat(prompt, max_tokens=1500, temperature=0.4)
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+    m = re.search(r"\[[\s\S]*\]", raw)
+    if not m:
+        return jsonify({"status": "error", "error": "Model did not return valid JSON", "raw": raw}), 500
+
+    try:
+        questions = json.loads(m.group(0))
+    except Exception:
+        try:
+            questions = json.loads(m.group(0).replace("'", '"'))
+        except Exception:
+            return jsonify({"status": "error", "error": "JSON parse failed", "raw": raw}), 500
+
+    if sid:
+        _save_chat(sid, "user", "custom_questions", requirement, filename or None)
+
+    return jsonify({
+        "status": "ok",
+        "language": language,
+        "num_questions": len(questions),
+        "questions": questions
+    }), 200
 
 # ── FILE CHAT HANDLER ─────────────────────────────────────────────────────────
 

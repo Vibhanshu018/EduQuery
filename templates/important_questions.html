@@ -21,6 +21,25 @@
     background: rgba(250,204,21,0.07);
     border-left: 2px solid rgba(250,204,21,0.4);
 }
+.cq-section-divider {
+    display: flex; align-items: center; gap: 0.7rem; margin: 1.1rem 0 1rem;
+}
+.cq-section-divider span { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+.cq-section-divider::before, .cq-section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.type-pill-cq {
+    padding: 5px 14px; border-radius: 99px; font-size: 0.78rem; font-weight: 500; cursor: pointer;
+    border: 1px solid var(--border); color: var(--text-muted); background: rgba(255,255,255,0.04); transition: all 0.15s; user-select: none;
+}
+.type-pill-cq.active { background: rgba(250,204,21,0.12); border-color: rgba(250,204,21,0.35); color: var(--yellow, #facc15); }
+.cq-ans-box {
+    margin-top: 6px; padding: 0.35rem 0.6rem; border-radius: 6px;
+    background: rgba(250,204,21,0.07); border-left: 2px solid rgba(250,204,21,0.4);
+    font-size: 0.8rem; color: var(--text-muted);
+}
+.cq-ans-label { font-size: 0.68rem; font-weight: 600; color: var(--yellow, #facc15); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+.cq-show-ans { font-size: 0.75rem; color: var(--yellow, #facc15); background: none; border: none; cursor: pointer; padding: 0; margin-top: 4px; }
+.q-cq-option { font-size: 0.82rem; color: var(--text-muted); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); display: flex; gap: 0.5rem; margin-bottom: 0.3rem; }
+.q-cq-option.correct { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.3); color: #4ade80; }
 </style>
 {% endblock %}
 
@@ -154,6 +173,126 @@
             btn.disabled = false;
         }
     });
+})();
+</script>
+<script>
+(function(){
+    document.querySelectorAll('.type-pill-cq').forEach(p => {
+        p.addEventListener('click', () => p.classList.toggle('active'));
+    });
+
+    let ansVis = {};
+
+    document.getElementById('cqBtn').addEventListener('click', async function(){
+        const req    = (document.getElementById('cq-req').value || '').trim();
+        const errBox = document.getElementById('cqError');
+        errBox.style.display = 'none';
+
+        if(!req){ errBox.textContent='Please describe what questions you need.'; errBox.style.display='block'; return; }
+
+        const types = [...document.querySelectorAll('.type-pill-cq.active')].map(p => p.dataset.type);
+        if(!types.length){ errBox.textContent='Select at least one question type.'; errBox.style.display='block'; return; }
+
+        const num   = parseInt(document.getElementById('cq-num').value) || 5;
+        const diff  = document.getElementById('cq-diff').value;
+        const lang  = document.getElementById('cq-lang').value;
+        const fname = (document.getElementById('cq-filename').value || '').trim();
+
+        document.getElementById('cqBtn').disabled = true;
+        document.getElementById('cqLoading').style.display = 'block';
+        document.getElementById('cqResults').innerHTML = '';
+        ansVis = {};
+
+        const fd = new FormData();
+        fd.append('requirement', req);
+        fd.append('difficulty', diff);
+        fd.append('language', lang);
+        fd.append('num_questions', num);
+        types.forEach(t => fd.append('q_types', t));
+        if(fname) fd.append('filename', fname);
+
+        try {
+            const res  = await fetch("{{ url_for('generate_custom_questions') }}", { method:'POST', body:fd });
+            const data = await res.json();
+            document.getElementById('cqLoading').style.display = 'none';
+            if(!res.ok || data.status !== 'ok') throw new Error(data.error || 'Server error');
+            renderCQ(data.questions);
+        } catch(e){
+            document.getElementById('cqLoading').style.display = 'none';
+            document.getElementById('cqResults').innerHTML = `<p class="error-msg">${e.message}</p>`;
+        } finally {
+            document.getElementById('cqBtn').disabled = false;
+        }
+    });
+
+    function diffBadge(d){
+        if(d==='Easy')   return 'style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:#4ade80;"';
+        if(d==='Hard')   return 'style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#f87171;"';
+        return 'style="background:rgba(250,204,21,0.1);border:1px solid rgba(250,204,21,0.3);color:#facc15;"';
+    }
+
+    function renderCQ(qs){
+        window._cqQuestions = qs;
+        let h = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem;">
+            <span style="font-size:0.9rem;font-weight:600;">${qs.length} question${qs.length!==1?'s':''} generated</span>
+            <button onclick="copyCQ()" style="font-size:0.75rem;color:var(--text-muted);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font-family:inherit;" id="cqCopyBtn">Copy all</button>
+        </div>`;
+
+        qs.forEach((q,i) => {
+            h += `<div class="q-important" style="counter-increment:none;">
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.45rem;flex-wrap:wrap;">
+                    <span class="muted" style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;">Q${i+1}</span>
+                    <span style="font-size:0.68rem;font-weight:600;padding:2px 9px;border-radius:99px;background:rgba(250,204,21,0.12);border:1px solid rgba(250,204,21,0.3);color:#facc15;">${q.type}</span>
+                    <span style="font-size:0.68rem;font-weight:600;padding:2px 9px;border-radius:99px;" ${diffBadge(q.difficulty)}>${q.difficulty}</span>
+                </div>
+                <div class="q-imp-text">${q.question}</div>`;
+
+            if(q.type==='MCQ' && q.options){
+                h += `<ul style="list-style:none;margin-top:0.45rem;">`;
+                q.options.forEach((opt,oi) => {
+                    const ltr = String.fromCharCode(65+oi);
+                    const ok  = opt===q.answer;
+                    h += `<li class="q-cq-option${ok?' correct':''}" style="margin-bottom:0.3rem;"><span style="font-weight:600;">${ltr}.</span> ${opt}</li>`;
+                });
+                h += `</ul>`;
+            } else if(q.type==='True/False'){
+                h += `<ul style="list-style:none;margin-top:0.45rem;">
+                    <li class="q-cq-option${q.answer==='True'?' correct':''}"><span style="font-weight:600;">A.</span> True</li>
+                    <li class="q-cq-option${q.answer==='False'?' correct':''}"><span style="font-weight:600;">B.</span> False</li>
+                </ul>`;
+            } else {
+                h += `<button class="cq-show-ans" id="cqsab-${i}" onclick="toggleCQAns(${i})">Show answer</button>
+                    <div id="cqab-${i}" class="cq-ans-box" style="display:none;">
+                        <div class="cq-ans-label">Answer</div>${q.answer}
+                    </div>`;
+            }
+            h += `</div>`;
+        });
+
+        document.getElementById('cqResults').innerHTML = h;
+    }
+
+    window.toggleCQAns = function(i){
+        ansVis[i] = !ansVis[i];
+        const box = document.getElementById('cqab-'+i);
+        const btn = document.getElementById('cqsab-'+i);
+        if(box) box.style.display = ansVis[i] ? 'block' : 'none';
+        if(btn) btn.textContent = ansVis[i] ? 'Hide answer' : 'Show answer';
+    };
+
+    window.copyCQ = function(){
+        if(!window._cqQuestions) return;
+        const txt = window._cqQuestions.map((q,i) => {
+            let t = `Q${i+1} [${q.type}] [${q.difficulty}]\n${q.question}`;
+            if(q.options) t += '\n' + q.options.map((o,oi) => `${String.fromCharCode(65+oi)}. ${o}`).join('\n');
+            t += `\nAnswer: ${q.answer}`;
+            return t;
+        }).join('\n\n');
+        navigator.clipboard.writeText(txt).then(() => {
+            const b = document.getElementById('cqCopyBtn');
+            if(b){ b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy all', 1500); }
+        });
+    };
 })();
 </script>
 {% endblock %}

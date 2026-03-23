@@ -1,6 +1,66 @@
 {% extends "base.html" %}
 {% block title %}Ask · RAG Study Buddy{% endblock %}
 
+{% block head_extra %}
+<style>
+.tab-row { display:flex; gap:0.5rem; margin-bottom:1.4rem; flex-wrap:wrap; }
+.tab-btn {
+    padding: 0.45rem 1.1rem; border-radius: 8px; font-size: 0.88rem;
+    font-weight: 600; border: 1px solid var(--border);
+    background: transparent; color: var(--text-muted); cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* custom q styles */
+.checkbox-group { display:flex; flex-wrap:wrap; gap:0.6rem; margin-top:0.4rem; }
+.checkbox-group label {
+    display:flex; align-items:center; gap:0.4rem;
+    padding: 0.35rem 0.75rem; border-radius: 8px;
+    border: 1px solid var(--border); font-size: 0.85rem;
+    cursor:pointer; color: var(--text-main);
+    transition: border-color 0.15s, background 0.15s;
+}
+.checkbox-group label:hover { border-color: rgba(37,99,235,0.5); background: rgba(37,99,235,0.07); }
+.checkbox-group input[type=checkbox] { width:auto; margin:0; accent-color: var(--primary); }
+
+#customResult { margin-top:1.2rem; }
+.cq-item {
+    padding: 1rem 1.2rem; border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(15,23,42,0.85);
+    margin-bottom: 0.9rem;
+}
+.cq-meta {
+    display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.5rem;
+}
+.badge-type {
+    font-size:0.7rem; font-weight:700; padding:0.2rem 0.55rem;
+    border-radius:6px; background: rgba(37,99,235,0.18);
+    color: #60a5fa; text-transform:uppercase; letter-spacing:0.05em;
+}
+.badge-diff {
+    font-size:0.7rem; font-weight:700; padding:0.2rem 0.55rem;
+    border-radius:6px; text-transform:uppercase; letter-spacing:0.05em;
+}
+.badge-diff.Easy   { background:rgba(34,197,94,0.15);  color:#4ade80; }
+.badge-diff.Medium { background:rgba(250,204,21,0.15); color:#fbbf24; }
+.badge-diff.Hard   { background:rgba(239,68,68,0.15);  color:#f87171; }
+.cq-question { font-size:0.95rem; font-weight:500; line-height:1.55; margin-bottom:0.5rem; }
+.cq-options { display:flex; flex-direction:column; gap:0.25rem; margin-bottom:0.45rem; }
+.cq-option  { font-size:0.85rem; color:var(--text-muted); padding:0.25rem 0.5rem; border-radius:6px; }
+.cq-answer  {
+    font-size:0.85rem; padding:0.4rem 0.7rem; border-radius:8px;
+    background:rgba(250,204,21,0.08); border:1px solid rgba(250,204,21,0.2);
+    color: var(--accent);
+}
+#cqSpinner { display:none; align-items:center; gap:0.6rem; color:var(--text-muted); font-size:0.9rem; margin-top:1rem; }
+#cqError   { display:none; margin-top:0.8rem; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="card">
     <div class="pill">STEP 1 · CONFIGURE QUESTIONS</div>
@@ -9,31 +69,82 @@
         Choose question type, count, and language. AI will read your uploaded file and produce exam-ready questions.
     </p>
 
-    <form action="{{ url_for('process_file', filename=filename) }}" method="post" style="margin-top:1.4rem;">
+    <!-- TABS -->
+    <div class="tab-row" style="margin-top:1.4rem;">
+        <button class="tab-btn active" onclick="switchTab('standard', this)">📋 Standard Generation</button>
+        <button class="tab-btn"        onclick="switchTab('custom',   this)">✨ Custom Generation</button>
+    </div>
 
-        <div class="input-row" style="margin-bottom:1rem;">
-            <div>
-                <label>Question type</label>
-                <select name="mode">
-                    <option value="mcq">MCQ (A–D options)</option>
-                    <option value="short">Short answer</option>
-                    <option value="long">Long answer (detailed)</option>
-                </select>
+    <!-- ── STANDARD TAB ─────────────────────────────────────────────── -->
+    <div id="tab-standard" class="tab-panel active">
+        <form action="{{ url_for('process_file', filename=filename) }}" method="post">
+
+            <div class="input-row" style="margin-bottom:1rem;">
+                <div>
+                    <label>Question type</label>
+                    <select name="mode">
+                        <option value="mcq">MCQ (A–D options)</option>
+                        <option value="short">Short answer</option>
+                        <option value="long">Long answer (detailed)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Number of questions</label>
+                    <input type="number" name="num_questions" value="5" min="1" max="25" />
+                </div>
             </div>
-            <div>
-                <label>Number of questions</label>
-                <input type="number" name="num_questions" value="5" min="1" max="25" />
+
+            <div style="display:flex; flex-wrap:wrap; gap:1.2rem; align-items:center; margin-bottom:1.2rem;">
+                <label style="display:flex; gap:0.45rem; align-items:center; cursor:pointer; color:var(--text-main); font-size:0.88rem;">
+                    <input type="checkbox" name="include_answers" checked style="width:auto; margin:0; accent-color: var(--primary);" />
+                    Include answer keys
+                </label>
+                <div>
+                    <label>Output language</label>
+                    <select name="language">
+                        <option value="English">English</option>
+                        <option value="Hindi">Hindi</option>
+                        <option value="Hinglish">Hinglish</option>
+                        <option value="Spanish">Spanish</option>
+                        <option value="French">French</option>
+                    </select>
+                </div>
             </div>
+
+            <div style="display:flex; gap:0.8rem; flex-wrap:wrap;">
+                <button type="submit" class="btn-primary">Generate questions</button>
+                <a href="{{ url_for('landing') }}" class="btn-secondary">← Back to Home</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- ── CUSTOM TAB ────────────────────────────────────────────────── -->
+    <div id="tab-custom" class="tab-panel">
+
+        <div style="margin-bottom:1rem;">
+            <label>Describe what you want <span style="color:var(--text-muted); font-size:0.82rem;">(required)</span></label>
+            <textarea id="cqRequirement" rows="3"
+                placeholder="e.g. Give me 5 hard MCQs on photosynthesis with tricky distractors, and 3 short-answer questions on the light reaction."
+                style="margin-top:0.4rem;"></textarea>
         </div>
 
-        <div style="display:flex; flex-wrap:wrap; gap:1.2rem; align-items:center; margin-bottom:1.2rem;">
-            <label style="display:flex; gap:0.45rem; align-items:center; cursor:pointer; color:var(--text-main); font-size:0.88rem;">
-                <input type="checkbox" name="include_answers" checked style="width:auto; margin:0; accent-color: var(--primary);" />
-                Include answer keys
-            </label>
-            <div>
-                <label>Output language</label>
-                <select name="language">
+        <div style="display:flex; flex-wrap:wrap; gap:1.2rem; margin-bottom:1rem;">
+            <div style="flex:1; min-width:160px;">
+                <label>Number of questions</label>
+                <input type="number" id="cqNum" value="5" min="1" max="20" style="margin-top:0.4rem;" />
+            </div>
+            <div style="flex:1; min-width:160px;">
+                <label>Difficulty</label>
+                <select id="cqDifficulty" style="margin-top:0.4rem;">
+                    <option value="Mixed">Mixed</option>
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
+                </select>
+            </div>
+            <div style="flex:1; min-width:160px;">
+                <label>Language</label>
+                <select id="cqLanguage" style="margin-top:0.4rem;">
                     <option value="English">English</option>
                     <option value="Hindi">Hindi</option>
                     <option value="Hinglish">Hinglish</option>
@@ -43,10 +154,146 @@
             </div>
         </div>
 
+        <div style="margin-bottom:1.2rem;">
+            <label>Question types to include</label>
+            <div class="checkbox-group" style="margin-top:0.5rem;">
+                <label><input type="checkbox" value="MCQ"          checked /> MCQ</label>
+                <label><input type="checkbox" value="Short Answer"         /> Short Answer</label>
+                <label><input type="checkbox" value="Long Answer"          /> Long Answer</label>
+                <label><input type="checkbox" value="True/False"           /> True / False</label>
+            </div>
+        </div>
+
         <div style="display:flex; gap:0.8rem; flex-wrap:wrap;">
-            <button type="submit" class="btn-primary">Generate questions</button>
+            <button class="btn-primary" onclick="generateCustom()">✨ Generate Custom Questions</button>
             <a href="{{ url_for('landing') }}" class="btn-secondary">← Back to Home</a>
         </div>
-    </form>
+
+        <!-- spinner -->
+        <div id="cqSpinner">
+            <div class="dot-pulse"><span></span><span></span><span></span></div>
+            Generating questions…
+        </div>
+
+        <!-- error -->
+        <div id="cqError" class="flash flash-error"></div>
+
+        <!-- results -->
+        <div id="customResult"></div>
+    </div><!-- /tab-custom -->
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+}
+
+async function generateCustom() {
+    const req      = document.getElementById('cqRequirement').value.trim();
+    const num      = document.getElementById('cqNum').value;
+    const diff     = document.getElementById('cqDifficulty').value;
+    const lang     = document.getElementById('cqLanguage').value;
+    const spinner  = document.getElementById('cqSpinner');
+    const errBox   = document.getElementById('cqError');
+    const resultEl = document.getElementById('customResult');
+
+    const checked = [...document.querySelectorAll('.checkbox-group input[type=checkbox]:checked')]
+                        .map(c => c.value);
+
+    errBox.style.display   = 'none';
+    resultEl.innerHTML     = '';
+
+    if (!req) {
+        errBox.textContent   = 'Please describe what you want in the text box above.';
+        errBox.style.display = 'block';
+        return;
+    }
+    if (checked.length === 0) {
+        errBox.textContent   = 'Please select at least one question type.';
+        errBox.style.display = 'block';
+        return;
+    }
+
+    spinner.style.display = 'flex';
+
+    const fd = new FormData();
+    fd.append('requirement',   req);
+    fd.append('filename',      '{{ filename }}');
+    fd.append('num_questions', num);
+    fd.append('difficulty',    diff);
+    fd.append('language',      lang);
+    checked.forEach(t => fd.append('q_types', t));
+
+    try {
+        const res  = await fetch("{{ url_for('generate_custom_questions') }}", { method:'POST', body:fd });
+        const data = await res.json();
+        spinner.style.display = 'none';
+
+        if (!res.ok || data.status !== 'ok') {
+            throw new Error(data.error || 'Server error');
+        }
+
+        renderCustomQuestions(data.questions);
+
+    } catch(err) {
+        spinner.style.display = 'none';
+        errBox.textContent    = err.message;
+        errBox.style.display  = 'block';
+    }
+}
+
+function renderCustomQuestions(questions) {
+    const el = document.getElementById('customResult');
+    if (!Array.isArray(questions) || questions.length === 0) {
+        el.innerHTML = '<p class="muted" style="margin-top:1rem;">No questions returned.</p>';
+        return;
+    }
+
+    let html = `<div style="margin-top:1.2rem;">
+        <div class="pill" style="margin-bottom:1rem;">RESULTS · ${questions.length} QUESTION${questions.length>1?'S':''}</div>`;
+
+    questions.forEach((q, i) => {
+        const type = q.type || 'Question';
+        const diff = q.difficulty || '';
+        const diffClass = ['Easy','Medium','Hard'].includes(diff) ? diff : '';
+
+        html += `<div class="cq-item">
+            <div class="cq-meta">
+                <span class="badge-type">${type}</span>
+                ${diffClass ? `<span class="badge-diff ${diffClass}">${diff}</span>` : ''}
+                <span style="font-size:0.75rem; color:var(--text-muted); margin-left:auto;">Q${i+1}</span>
+            </div>
+            <div class="cq-question">${escHtml(q.question || '')}</div>`;
+
+        // MCQ options
+        if (Array.isArray(q.options) && q.options.length) {
+            html += '<div class="cq-options">';
+            q.options.forEach(opt => {
+                html += `<div class="cq-option">• ${escHtml(opt)}</div>`;
+            });
+            html += '</div>';
+        }
+
+        if (q.answer) {
+            html += `<div class="cq-answer"><strong>Answer:</strong> ${escHtml(q.answer)}</div>`;
+        }
+
+        html += '</div>';
+    });
+
+    html += '</div>';
+    el.innerHTML = html;
+}
+
+function escHtml(s) {
+    return String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
 {% endblock %}

@@ -320,7 +320,7 @@
         <nav class="nav-links">
             <a href="{{ url_for('landing') }}"                 class="nav-link {% if active == 'home' %}active{% endif %}">Home</a>
             <a href="{{ url_for('study_page') }}"              class="nav-link {% if active == 'study' %}active{% endif %}">YouTube &amp; Notes</a>
-            <a href="{{ url_for('use_example') }}"             class="nav-link {% if active == 'docqa' %}active{% endif %}">Document Q&amp;A</a>
+            <a href="/dashboard" class="nav-link {% if active == 'docqa' %}active{% endif %}">Document Q&amp;A</a>
             <a href="{{ url_for('important_questions_page') }}" class="nav-link {% if active == 'important' %}active{% endif %}">Important Qs</a>
             <a href="{{ url_for('history') }}"                 class="nav-link {% if active == 'history' %}active{% endif %}">History</a>
             <a href="{{ url_for('auth_page') }}"               class="nav-link-auth {% if active == 'auth' %}active{% endif %}">Login</a>

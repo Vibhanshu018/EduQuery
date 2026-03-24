@@ -41,7 +41,6 @@
             flex-direction: column;
         }
 
-        /* grid overlay */
         body::before {
             content: '';
             position: fixed; inset: 0; pointer-events: none; z-index: 0;
@@ -103,6 +102,35 @@
             transition: border-color 0.18s, background 0.18s;
         }
         .nav-link-auth:hover { border-color: rgba(250,204,21,0.45); background: rgba(250,204,21,0.06); }
+
+        /* ── user chip (shown when logged in) ── */
+        .nav-user-chip {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            padding: 0.3rem 0.75rem 0.3rem 0.4rem;
+            border-radius: var(--radius-full);
+            border: 1px solid rgba(250,204,21,0.3);
+            background: rgba(250,204,21,0.07);
+            font-size: 0.82rem; color: var(--accent);
+            font-weight: 500;
+        }
+        .nav-user-avatar {
+            width: 22px; height: 22px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.65rem; color: #020617; font-weight: 800;
+            flex-shrink: 0;
+        }
+        .nav-logout {
+            padding: 0.38rem 0.85rem;
+            border-radius: var(--radius-full);
+            border: 1px solid rgba(248,113,113,0.3);
+            background: rgba(248,113,113,0.07);
+            color: #fca5a5;
+            font-size: 0.82rem; font-weight: 400;
+            transition: border-color 0.18s, background 0.18s;
+            cursor: pointer;
+        }
+        .nav-logout:hover { border-color: rgba(248,113,113,0.6); background: rgba(248,113,113,0.14); }
 
         /* ── PAGE ───────────────────────────────────────── */
         .page { flex: 1; position: relative; z-index: 1; }
@@ -203,13 +231,8 @@
             display: flex; flex-direction: column; gap: 0.7rem;
             padding: 0.5rem 0;
         }
-        .chat-input-row {
-            display: flex; gap: 0.7rem; align-items: flex-end;
-        }
-        .chat-input-row textarea {
-            flex: 1; min-height: 60px; max-height: 120px;
-            margin-top: 0;
-        }
+        .chat-input-row { display: flex; gap: 0.7rem; align-items: flex-end; }
+        .chat-input-row textarea { flex: 1; min-height: 60px; max-height: 120px; margin-top: 0; }
         .msg {
             max-width: 82%;
             padding: 0.7rem 1rem;
@@ -318,12 +341,25 @@
             <span>RAG Study Buddy</span>
         </a>
         <nav class="nav-links">
-            <a href="{{ url_for('landing') }}"                 class="nav-link {% if active == 'home' %}active{% endif %}">Home</a>
-            <a href="{{ url_for('study_page') }}"              class="nav-link {% if active == 'study' %}active{% endif %}">YouTube &amp; Notes</a>
-            <a href="/dashboard" class="nav-link {% if active == 'docqa' %}active{% endif %}">Document Q&amp;A</a>
-            <a href="{{ url_for('important_questions_page') }}" class="nav-link {% if active == 'important' %}active{% endif %}">Important Qs</a>
-            <a href="{{ url_for('history') }}"                 class="nav-link {% if active == 'history' %}active{% endif %}">History</a>
-            <a href="{{ url_for('auth_page') }}"               class="nav-link-auth {% if active == 'auth' %}active{% endif %}">Login</a>
+            <a href="{{ url_for('landing') }}"                  class="nav-link {% if active == 'home' %}active{% endif %}">Home</a>
+            <a href="{{ url_for('study_page') }}"               class="nav-link {% if active == 'study' %}active{% endif %}">YouTube &amp; Notes</a>
+            <a href="/dashboard"                                class="nav-link {% if active == 'docqa' %}active{% endif %}">Document Q&amp;A</a>
+            <a href="{{ url_for('important_questions_page') }}"  class="nav-link {% if active == 'important' %}active{% endif %}">Important Qs</a>
+            <a href="{{ url_for('history') }}"                  class="nav-link {% if active == 'history' %}active{% endif %}">History</a>
+
+            {% if current_user %}
+                <!-- Logged-in: show avatar chip + logout -->
+                <div class="nav-user-chip">
+                    <div class="nav-user-avatar">
+                        {{ current_user.name[0].upper() }}
+                    </div>
+                    {{ current_user.name.split()[0] }}
+                </div>
+                <a href="{{ url_for('logout') }}" class="nav-logout">Logout</a>
+            {% else %}
+                <!-- Logged-out: show Login button -->
+                <a href="{{ url_for('auth_page') }}" class="nav-link-auth {% if active == 'auth' %}active{% endif %}">Login</a>
+            {% endif %}
         </nav>
     </div>
 </header>

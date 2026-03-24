@@ -194,7 +194,11 @@ def load_or_create_session():
 @app.after_request
 def set_session_cookie(response):
     try:
-        if getattr(g, "new_session", False):
+        # OLD: only sets on brand new sessions
+        # if getattr(g, "new_session", False):
+
+        # NEW: set whenever we have a session id (refreshes on login too)
+        if getattr(g, "session_id", None):
             response.set_cookie(
                 SESSION_COOKIE_NAME,
                 g.session_id,
@@ -1088,6 +1092,9 @@ def not_found(e):
 @app.errorhandler(500)
 def server_error(e):
     return jsonify({"status": "error", "error": "Internal server error"}), 500
+@app.context_processor
+def inject_user():
+    return dict(current_user=getattr(g, "user", None))
 
 
 # ── ENTRYPOINT ────────────────────────────────────────────────────────────────
